@@ -1,0 +1,81 @@
+/* styles/tokens.css
+   Design tokens: every colour, size and font used in FLEXI lives here.
+   Theme: building wayfinding. Concrete-grey walls, slate ink, an amber
+   "signal" colour for actions, and one zone colour per type of space. */
+
+:root {
+  /* Surfaces */
+  --paper: #f3f4f1; /* painted concrete */
+  --surface: #ffffff;
+  --sunken: #e8eae5;
+  --line: #d5d8d2;
+  --line-strong: #b4b9b1;
+
+  /* Ink */
+  --ink: #1d2430;
+  --ink-2: #4a5361;
+  --ink-3: #6e7682;
+
+  /* Signal (primary action, current selection) */
+  --signal: #f2b705;
+  --signal-hover: #e0a800;
+  --signal-soft: #fdf3cc;
+
+  /* Zones: one colour per space type */
+  --desk: #2e7d5b;
+  --desk-soft: #e1f0e8;
+  --room: #2f5bd3;
+  --room-soft: #e3e9fb;
+  --cabin: #8a4fb5;
+  --cabin-soft: #f0e6f7;
+
+  /* Feedback */
+  --danger: #b42318;
+  --danger-soft: #fde8e6;
+  --warn-soft: #fff4d6;
+  --ok: #2e7d5b;
+
+  /* Type: Archivo, a grotesque with a width axis.
+     Headings are set wide (like building signs); body text at normal width. */
+  --font: "Archivo Variable", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --wide: 116%;
+  --step--1: 0.8125rem; /* 13px */
+  --step-0: 1rem; /* 16px */
+  --step-1: 1.25rem; /* 20px */
+  --step-2: 1.5625rem; /* 25px */
+  --step-3: 1.953rem; /* 31px */
+  --step-4: 2.441rem; /* 39px */
+  --step-5: 3.052rem; /* 49px */
+
+  /* Spacing (4px grid) */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+  --s-7: 48px;
+  --s-8: 64px;
+
+  /* Shape: small radius for controls, larger for panels and dialogs */
+  --r-s: 4px;
+  --r-m: 6px;
+  --r-l: 10px;
+
+  --focus: 0 0 0 3px rgba(242, 183, 5, 0.55), 0 0 0 1px var(--ink);
+  --sidebar-w: 248px;
+}
+
+/* Each zone class sets --zone so components can colour themselves */
+.zone-hot-desk {
+  --zone: var(--desk);
+  --zone-soft: var(--desk-soft);
+}
+.zone-meeting-room {
+  --zone: var(--room);
+  --zone-soft: var(--room-soft);
+}
+.zone-private-cabin {
+  --zone: var(--cabin);
+  --zone-soft: var(--cabin-soft);
+}
