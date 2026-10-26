@@ -45,7 +45,7 @@ export function parseApiError(error) {
   const data = response?.data;
   const fromFlexi = data && typeof data === "object" && "success" in data;
 
-  // A normal FLEXI error answer: show its message and field errors
+  // A normal Pine error answer: show its message and field errors
   if (response && fromFlexi) {
     return {
       status: response.status,
@@ -58,7 +58,7 @@ export function parseApiError(error) {
   if (request && (!response || response.status >= 500)) {
     return {
       status: 0,
-      message: "Can't reach the FLEXI server. Check that the backend window is open and running on port 5000.",
+      message: "Can't reach the Pine server. Check that the backend window is open and running on port 5000.",
       fieldErrors: {},
     };
   }

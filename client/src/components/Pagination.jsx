@@ -10,18 +10,28 @@ export default function Pagination({ pagination, onPage, noun = "results" }) {
 
   return (
     <nav className="pagination" aria-label="Pages">
-      <span className="pagination__info">
-        {from}–{to} of {total} {noun}
+      <span className="tabular">
+        Showing {from}–{to} of {total} {noun}
       </span>
       {pages > 1 && (
         <div className="pagination__buttons">
-          <button type="button" className="btn btn--ghost btn--sm" onClick={() => onPage(page - 1)} disabled={page <= 1}>
+          <button
+            type="button"
+            className="btn btn--secondary btn--sm"
+            onClick={() => onPage(page - 1)}
+            disabled={page <= 1}
+          >
             <ChevronLeft size={16} aria-hidden /> Previous
           </button>
-          <span className="pagination__page">
+          <span className="tabular" aria-current="page">
             Page {page} of {pages}
           </span>
-          <button type="button" className="btn btn--ghost btn--sm" onClick={() => onPage(page + 1)} disabled={page >= pages}>
+          <button
+            type="button"
+            className="btn btn--secondary btn--sm"
+            onClick={() => onPage(page + 1)}
+            disabled={page >= pages}
+          >
             Next <ChevronRight size={16} aria-hidden />
           </button>
         </div>

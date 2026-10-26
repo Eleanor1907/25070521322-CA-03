@@ -30,7 +30,7 @@ const register = asyncHandler(async (req, res) => {
 
   res.status(201).json({
     success: true,
-    message: "Account created. Welcome to FLEXI!",
+    message: "Account created. Welcome to Pine!",
     token: signToken(user),
     user,
   });

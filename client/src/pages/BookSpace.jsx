@@ -3,21 +3,23 @@
 //   /app/spaces/:spaceId/book       -> make a new booking   (POST /api/bookings)
 //   /app/bookings/:bookingId/edit   -> reschedule a booking (PUT  /api/bookings/:id)
 //
-// The large strip shows the chosen day. Clicking a free half hour on it
-// sets the start time; the form below shows clashes before you submit.
+// The seat map shows the chosen day, one seat per half hour. Pick seats on the
+// map (or with the From / To boxes); clashes are shown before you submit, and
+// the server checks every rule again when you do.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { ArrowLeft, MapPin, Users } from "lucide-react";
-import DayStrip from "../components/DayStrip";
-import DateStepper from "../components/DateStepper";
+import { AlertTriangle, ArrowLeft, MapPin, Users } from "lucide-react";
+import DatePicker from "../components/DatePicker";
 import Field from "../components/Field";
-import ZoneTag from "../components/ZoneTag";
+import TypeTag from "../components/TypeTag";
+import { SeatLegend, SeatMap } from "../components/Seats";
 import { ErrorState, Loader } from "../components/Feedback";
 import { useToast } from "../hooks/useToast";
 import { getSpace } from "../services/spaceService";
 import { createBooking, getBooking, updateBooking } from "../services/bookingService";
 import { parseApiError } from "../services/api";
+import { plusMinutes } from "../utils/seats";
 import {
   CLOSE_TIME,
   OPEN_TIME,
@@ -31,12 +33,6 @@ import {
   toMinutes,
   todayString,
 } from "../utils/format";
-
-const pad = (n) => String(n).padStart(2, "0");
-const plusMinutes = (t, mins) => {
-  const m = Math.min(toMinutes(t) + mins, toMinutes(CLOSE_TIME));
-  return `${pad(Math.floor(m / 60))}:${pad(m % 60)}`;
-};
 
 export default function BookSpace() {
   const { spaceId: spaceParam, bookingId } = useParams();
@@ -129,6 +125,12 @@ export default function BookSpace() {
   const startPassed = isToday && form.startTime && form.startTime <= now;
   const hours = hasRange ? hoursBetween(form.startTime, form.endTime) : 0;
   const cost = space ? Math.round(hours * space.hourlyRate) : 0;
+  const whenText = hasRange ? `${relativeDay(date)}, ${form.startTime}–${form.endTime}` : "Choose your seats";
+
+  const clearMessages = () => {
+    setErrors({});
+    setFormError("");
+  };
 
   const set = (key) => (e) => {
     const value = e.target.value;
@@ -145,16 +147,20 @@ export default function BookSpace() {
     setFormError("");
   };
 
-  const pickStart = (t) => {
-    setForm((f) => ({ ...f, startTime: t, endTime: plusMinutes(t, 60) }));
-    setErrors({});
-    setFormError("");
+  // From the seat map
+  const pickSeats = (startTime, endTime) => {
+    setForm((f) => ({ ...f, startTime, endTime }));
+    clearMessages();
+  };
+
+  const clearSeats = () => {
+    setForm((f) => ({ ...f, startTime: "", endTime: "" }));
+    clearMessages();
   };
 
   const changeDate = (d) => {
     setDate(d);
-    setErrors({});
-    setFormError("");
+    clearMessages();
   };
 
   function validate() {
@@ -163,7 +169,7 @@ export default function BookSpace() {
     else if (startPassed) e.startTime = "This time has already passed today.";
     if (!form.endTime) e.endTime = "Pick an end time.";
     else if (form.startTime && form.endTime <= form.startTime) e.endTime = "End time must be after the start time.";
-    if (conflict) e.startTime = "This overlaps another booking. Pick a free gap.";
+    if (conflict) e.startTime = "This overlaps another booking. Pick free seats.";
     const people = Number(form.attendees);
     if (!Number.isInteger(people) || people < 1) e.attendees = "Enter how many people (1 or more).";
     else if (space && people > space.capacity) e.attendees = `${space.name} fits up to ${space.capacity}.`;
@@ -196,7 +202,7 @@ export default function BookSpace() {
       const { status, message, fieldErrors } = parseApiError(err);
       setErrors(fieldErrors);
       setFormError(message);
-      if (status === 409) loadSpace(); // someone else just took the slot: refresh the strip
+      if (status === 409) loadSpace(); // someone else just took the seats: refresh the map
     } finally {
       setBusy(false);
     }
@@ -215,140 +221,182 @@ export default function BookSpace() {
 
   if (!space) return <Loader label="Loading space…" />;
 
+  const submitLabel = busy ? "Saving…" : isEdit ? "Save new time" : "Confirm booking";
+
   return (
-    <>
+    <div className="book-page">
       <Link to={isEdit ? "/app/bookings" : `/app/spaces?date=${date}`} className="back-link">
         <ArrowLeft size={16} aria-hidden /> {isEdit ? "Back to my bookings" : "Back to spaces"}
       </Link>
 
-      <div className={`book zone-${space.type}`}>
-        <section className="book__space" aria-labelledby="space-title">
-          <h1 id="space-title">{isEdit ? `Reschedule: ${space.name}` : space.name}</h1>
-          <p className="meta-line">
-            <ZoneTag type={space.type} />
-            <span>
-              <MapPin size={14} aria-hidden /> {space.floor}
-            </span>
-            <span>
-              <Users size={14} aria-hidden /> Up to {space.capacity}
-            </span>
-            <span>{formatMoney(space.hourlyRate)} / hour</span>
-          </p>
-          {space.description && <p className="book__desc">{space.description}</p>}
-          {space.amenities.length > 0 && (
-            <ul className="amenities">
-              {space.amenities.map((a) => (
-                <li key={a}>{a}</li>
-              ))}
-            </ul>
-          )}
+      <header className="book-head">
+        <h1>{isEdit ? `Reschedule: ${space.name}` : space.name}</h1>
+        <p className="meta">
+          <TypeTag type={space.type} />
+          <span>
+            <MapPin size={14} aria-hidden /> {space.floor}
+          </span>
+          <span>
+            <Users size={14} aria-hidden /> Up to {space.capacity}
+          </span>
+          <span className="tabular">{formatMoney(space.hourlyRate)} / hour</span>
+        </p>
+        {space.description && <p className="book-head__desc">{space.description}</p>}
+        {space.amenities.length > 0 && (
+          <ul className="tags" aria-label="Amenities">
+            {space.amenities.map((a) => (
+              <li key={a}>{a}</li>
+            ))}
+          </ul>
+        )}
+      </header>
 
-          <div className="book__day">
-            <div className="book__day-head">
-              <h2>Pick a time</h2>
-              <DateStepper id="book-date" value={date} onChange={changeDate} />
+      <div className="book-grid">
+        <section className="panel book-map" aria-labelledby="map-title">
+          <div className="panel__head">
+            <div>
+              <h2 id="map-title">Pick your seats</h2>
+              <p>Each seat is half an hour, from {OPEN_TIME} to {CLOSE_TIME}.</p>
             </div>
-            <div className={loadingSlots ? "is-refreshing" : ""}>
-              <DayStrip
-                size="lg"
-                date={date}
-                zone={space.type}
-                slots={slots}
-                selection={hasRange ? { startTime: form.startTime, endTime: form.endTime } : null}
-                conflict={conflict}
-                onPickStart={pickStart}
-              />
+            <DatePicker id="book-date" value={date} onChange={changeDate} />
+          </div>
+          <div className="panel__body">
+            <SeatMap
+              slots={slots}
+              date={date}
+              start={form.startTime}
+              end={form.endTime}
+              conflict={conflict}
+              loading={loadingSlots}
+              onChange={pickSeats}
+              describedBy="map-hint"
+            />
+            <div className="book-map__foot">
+              <SeatLegend items={["free", "chosen", "taken", "mine", "past"]} />
+              <p className="hint" id="map-hint">
+                Click a start seat, then an end seat, or drag across.
+                <span className="sr-only">
+                  {" "}
+                  Arrow keys move between seats and Enter picks one. You can also set the From and To boxes.
+                </span>
+              </p>
+              {hasRange && (
+                <button type="button" className="btn btn--quiet btn--sm" onClick={clearSeats}>
+                  Clear my choice
+                </button>
+              )}
             </div>
-            <div className="legend">
-              <span><i className="legend__booked" /> Booked</span>
-              <span><i className="legend__mine" /> Yours</span>
-              <span><i className="legend__selected" /> Your choice</span>
-            </div>
-            <p className="hint">Click a free half hour on the strip to start there.</p>
           </div>
         </section>
 
-        <section className="book__form panel" aria-labelledby="form-title">
-          <h2 id="form-title" className="panel__title">
-            {isEdit ? "New time and details" : "Your booking"}
-          </h2>
-
-          {formError && (
-            <p className="notice notice--error" role="alert">
-              {formError}
-            </p>
-          )}
-
-          <form className="form" onSubmit={handleSubmit} noValidate>
-            <div className="form-row">
-              <Field id="startTime" label="From" error={errors.startTime}>
-                <select value={form.startTime} onChange={set("startTime")}>
-                  <option value="">Choose</option>
-                  {startChoices.map(({ t, disabled }) => (
-                    <option key={t} value={t} disabled={disabled}>
-                      {t}
-                      {disabled ? " (not free)" : ""}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-              <Field id="endTime" label="To" error={errors.endTime}>
-                <select value={form.endTime} onChange={set("endTime")} disabled={!form.startTime}>
-                  <option value="">Choose</option>
-                  {endChoices.map(({ t, disabled }) => (
-                    <option key={t} value={t} disabled={disabled}>
-                      {t}
-                    </option>
-                  ))}
-                </select>
-              </Field>
+        <aside className="book-aside">
+          <section className="panel" aria-labelledby="form-title">
+            <div className="panel__head">
+              <h2 id="form-title">{isEdit ? "New time and details" : "Your ticket"}</h2>
             </div>
+            <div className="panel__body">
+              {formError && (
+                <p className="notice notice--error" role="alert">
+                  <AlertTriangle size={18} aria-hidden /> {formError}
+                </p>
+              )}
 
-            {conflict && !errors.startTime && (
-              <p className="notice notice--warn">This time overlaps another booking. Pick a free gap on the strip.</p>
-            )}
+              <form id="book-form" className="form" onSubmit={handleSubmit} noValidate>
+                <div className="form-row">
+                  <Field id="startTime" label="From" error={errors.startTime}>
+                    <select value={form.startTime} onChange={set("startTime")}>
+                      <option value="">Choose</option>
+                      {startChoices.map(({ t, disabled }) => (
+                        <option key={t} value={t} disabled={disabled}>
+                          {t}
+                          {disabled ? " (not free)" : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                  <Field id="endTime" label="To" error={errors.endTime}>
+                    <select value={form.endTime} onChange={set("endTime")} disabled={!form.startTime}>
+                      <option value="">Choose</option>
+                      {endChoices.map(({ t, disabled }) => (
+                        <option key={t} value={t} disabled={disabled}>
+                          {t}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                </div>
 
-            <Field
-              id="attendees"
-              label="People"
-              error={errors.attendees}
-              hint={`This space fits up to ${space.capacity}.`}
-            >
-              <input
-                type="number"
-                min="1"
-                max={space.capacity}
-                step="1"
-                value={form.attendees}
-                onChange={set("attendees")}
-              />
-            </Field>
+                {conflict && !errors.startTime && (
+                  <p className="notice notice--warn">
+                    <AlertTriangle size={18} aria-hidden /> This time overlaps another booking. Pick free seats on the
+                    map.
+                  </p>
+                )}
 
-            <Field id="purpose" label="Purpose" error={errors.purpose} hint="Shown on your booking, e.g. Client call.">
-              <input value={form.purpose} onChange={set("purpose")} maxLength={120} placeholder="e.g. Team stand-up" />
-            </Field>
+                <Field
+                  id="attendees"
+                  label="People"
+                  error={errors.attendees}
+                  hint={`This space fits up to ${space.capacity}.`}
+                >
+                  <input
+                    type="number"
+                    min="1"
+                    max={space.capacity}
+                    step="1"
+                    value={form.attendees}
+                    onChange={set("attendees")}
+                  />
+                </Field>
 
-            <dl className="receipt">
-              <div>
-                <dt>When</dt>
-                <dd>{hasRange ? `${relativeDay(date)}, ${form.startTime}–${form.endTime}` : "Choose a time"}</dd>
-              </div>
-              <div>
-                <dt>Length</dt>
-                <dd>{hasRange ? formatDuration(hours) : "–"}</dd>
-              </div>
-              <div className="receipt__total">
-                <dt>Total</dt>
-                <dd>{formatMoney(cost)}</dd>
-              </div>
-            </dl>
+                <Field id="purpose" label="Purpose" error={errors.purpose} hint="Shown on your ticket, e.g. Client call.">
+                  <input value={form.purpose} onChange={set("purpose")} maxLength={120} placeholder="e.g. Team stand-up" />
+                </Field>
 
-            <button type="submit" className="btn btn--primary btn--block" disabled={busy || conflict}>
-              {busy ? "Saving…" : isEdit ? "Save new time" : "Confirm booking"}
-            </button>
-          </form>
-        </section>
+                <dl className="ledger receipt" aria-live="polite">
+                  <div>
+                    <dt>When</dt>
+                    <dd>{whenText}</dd>
+                  </div>
+                  <div>
+                    <dt>Length</dt>
+                    <dd>{hasRange ? formatDuration(hours) : "–"}</dd>
+                  </div>
+                  <div>
+                    <dt>Rate</dt>
+                    <dd>{formatMoney(space.hourlyRate)} / hour</dd>
+                  </div>
+                  <div className="ledger__total">
+                    <dt>Total</dt>
+                    <dd>{formatMoney(cost)}</dd>
+                  </div>
+                </dl>
+
+                <button
+                  type="submit"
+                  className="btn btn--primary btn--lg btn--block book-submit"
+                  disabled={busy || conflict}
+                >
+                  {busy && <span className="btn__spinner" aria-hidden="true" />}
+                  {submitLabel}
+                </button>
+              </form>
+            </div>
+          </section>
+        </aside>
       </div>
-    </>
+
+      {/* Phones: the total and the confirm button stay at the bottom of the screen */}
+      <div className="book-cta">
+        <div className="book-cta__sum">
+          <strong className="tabular">{formatMoney(cost)}</strong>
+          <span>{whenText}</span>
+        </div>
+        <button type="submit" form="book-form" className="btn btn--primary" disabled={busy || conflict}>
+          {busy && <span className="btn__spinner" aria-hidden="true" />}
+          {submitLabel}
+        </button>
+      </div>
+    </div>
   );
 }

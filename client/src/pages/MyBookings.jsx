@@ -1,21 +1,20 @@
 // pages/MyBookings.jsx
-// The logged-in member's bookings, split into Upcoming / Past / Cancelled.
-// Upcoming bookings can be rescheduled or cancelled; past and cancelled ones can be deleted.
+// The logged-in member's bookings as tickets, split into Upcoming / Past / Cancelled.
+// Upcoming tickets can be rescheduled or cancelled; past and cancelled ones can be deleted.
 
 import { useCallback, useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { Search, Users } from "lucide-react";
+import { CalendarClock, Search, Trash2, XCircle } from "lucide-react";
 import PageHeader from "../components/PageHeader";
-import ZoneTag from "../components/ZoneTag";
-import StatusBadge from "../components/StatusBadge";
+import Ticket from "../components/Ticket";
 import Pagination from "../components/Pagination";
 import ConfirmDialog from "../components/ConfirmDialog";
-import { EmptyState, ErrorState, Loader } from "../components/Feedback";
+import { EmptyState, ErrorState, SkeletonList } from "../components/Feedback";
 import useDebounce from "../hooks/useDebounce";
 import { useToast } from "../hooks/useToast";
 import { cancelBooking, deleteBooking, getBookings } from "../services/bookingService";
 import { parseApiError } from "../services/api";
-import { dayParts, formatDuration, formatMoney, hoursBetween, relativeDay } from "../utils/format";
+import { relativeDay } from "../utils/format";
 
 const TABS = [
   { value: "upcoming", label: "Upcoming" },
@@ -25,10 +24,10 @@ const TABS = [
 ];
 
 const EMPTY_TEXT = {
-  upcoming: ["No upcoming bookings", "When you book a space it will appear here."],
-  past: ["No past bookings yet", "Bookings move here once their time is over."],
+  upcoming: ["No upcoming bookings", "When you book seats, your ticket will appear here."],
+  past: ["No past bookings yet", "Tickets move here once their time is over."],
   cancelled: ["Nothing cancelled", "Bookings you cancel are kept here until you delete them."],
-  all: ["No bookings yet", "Find a space and make your first booking."],
+  all: ["No bookings yet", "Find a space and book your first seats."],
 };
 
 export default function MyBookings() {
@@ -89,6 +88,7 @@ export default function MyBookings() {
     <>
       <PageHeader
         title="My bookings"
+        subtitle="Every booking is a ticket. Change or cancel upcoming ones any time before they start."
         actions={
           <Link className="btn btn--primary" to="/app/spaces">
             Book a space
@@ -96,29 +96,30 @@ export default function MyBookings() {
         }
       />
 
-      <div className="toolbar">
-        <div className="tabs" role="tablist" aria-label="Booking status">
-          {TABS.map((t) => (
-            <button
-              key={t.value}
-              type="button"
-              role="tab"
-              aria-selected={scope === t.value}
-              className={scope === t.value ? "is-on" : ""}
-              onClick={() => setParam({ tab: t.value === "upcoming" ? "" : t.value })}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
+      <div className="tabs" role="tablist" aria-label="Booking status">
+        {TABS.map((t) => (
+          <button
+            key={t.value}
+            type="button"
+            role="tab"
+            aria-selected={scope === t.value}
+            className={scope === t.value ? "is-on" : ""}
+            onClick={() => setParam({ tab: t.value === "upcoming" ? "" : t.value })}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
 
-        <div className="search">
+      <div className="filters">
+        <div className="search filters__grow">
           <Search size={18} aria-hidden />
           <label htmlFor="booking-search" className="sr-only">
             Search bookings
           </label>
           <input
             id="booking-search"
+            className="input"
             type="search"
             placeholder="Search by space or purpose"
             value={search}
@@ -129,9 +130,9 @@ export default function MyBookings() {
           />
         </div>
 
-        <label className="select-inline">
+        <label className="select-inline" style={{ "--label-w": "2.4em" }}>
           <span>Sort</span>
-          <select value={sort} onChange={(e) => setParam({ sort: e.target.value })}>
+          <select className="select" value={sort} onChange={(e) => setParam({ sort: e.target.value })}>
             <option value="">{scope === "upcoming" ? "Soonest first" : "Latest first"}</option>
             <option value={scope === "upcoming" ? "date-desc" : "date-asc"}>
               {scope === "upcoming" ? "Latest first" : "Oldest first"}
@@ -143,81 +144,62 @@ export default function MyBookings() {
       </div>
 
       {error && <ErrorState message={error} onRetry={load} />}
-      {loading && !result && <Loader label="Loading bookings…" />}
+      {loading && !result && !error && <SkeletonList kind="tickets" count={3} label="Loading bookings" />}
 
       {result && !error && (
-        <div className={loading ? "is-refreshing" : ""}>
+        <div className={loading ? "is-refreshing" : ""} aria-busy={loading}>
           {result.data.length === 0 ? (
-            <EmptyState
-              title={debounced ? "No bookings match your search" : EMPTY_TEXT[scope][0]}
-              text={debounced ? "Try a different space name or purpose." : EMPTY_TEXT[scope][1]}
-              action={
-                !debounced &&
-                (scope === "upcoming" || scope === "all") && (
-                  <Link className="btn btn--primary" to="/app/spaces">
-                    Find a space
-                  </Link>
-                )
-              }
-            />
+            <div className="panel">
+              <EmptyState
+                title={debounced ? "No bookings match your search" : EMPTY_TEXT[scope][0]}
+                text={debounced ? "Try a different space name or purpose." : EMPTY_TEXT[scope][1]}
+                action={
+                  !debounced &&
+                  (scope === "upcoming" || scope === "all") && (
+                    <Link className="btn btn--primary" to="/app/spaces">
+                      Find a space
+                    </Link>
+                  )
+                }
+              />
+            </div>
           ) : (
             <ul className="ticket-list">
-              {result.data.map((b) => {
-                const d = dayParts(b.date);
-                return (
-                  <li key={b._id} className={`ticket zone-${b.space?.type} ${b.status === "cancelled" ? "is-cancelled" : ""}`}>
-                    <div className="ticket__date" aria-label={relativeDay(b.date)}>
-                      <span>{d.weekday}</span>
-                      <strong>{d.day}</strong>
-                      <span>{d.month}</span>
-                    </div>
-
-                    <div className="ticket__main">
-                      <p className="ticket__time">
-                        {b.startTime}–{b.endTime}
-                        <span>{formatDuration(hoursBetween(b.startTime, b.endTime))}</span>
-                      </p>
-                      <h2>{b.space?.name || "Deleted space"}</h2>
-                      <p className="meta-line">
-                        {b.space && <ZoneTag type={b.space.type} />}
-                        <span>
-                          <Users size={14} aria-hidden /> {b.attendees}
-                        </span>
-                        <span>{b.purpose}</span>
-                      </p>
-                    </div>
-
-                    <div className="ticket__side">
-                      <StatusBadge booking={b} />
-                      <span className="price">{formatMoney(b.totalCost)}</span>
-                      <div className="ticket__actions">
-                        {b.isUpcoming ? (
-                          <>
-                            <Link className="btn btn--ghost btn--sm" to={`/app/bookings/${b._id}/edit`}>
-                              Reschedule
-                            </Link>
-                            <button
-                              type="button"
-                              className="btn btn--quiet-danger btn--sm"
-                              onClick={() => setConfirm({ action: "cancel", booking: b })}
-                            >
-                              Cancel
-                            </button>
-                          </>
-                        ) : (
+              {result.data.map((b) => (
+                <li key={b._id} className="ticket-wrap">
+                  <Ticket
+                    booking={b}
+                    actions={
+                      b.isUpcoming ? (
+                        <>
+                          <Link
+                            className="btn btn--secondary btn--sm"
+                            to={`/app/bookings/${b._id}/edit`}
+                            aria-label={`Reschedule ${b.space?.name || "booking"}, ${relativeDay(b.date)} ${b.startTime}`}
+                          >
+                            <CalendarClock size={15} aria-hidden /> Reschedule
+                          </Link>
                           <button
                             type="button"
-                            className="btn btn--quiet-danger btn--sm"
-                            onClick={() => setConfirm({ action: "delete", booking: b })}
+                            className="btn btn--danger-quiet btn--sm"
+                            onClick={() => setConfirm({ action: "cancel", booking: b })}
                           >
-                            Delete
+                            <XCircle size={15} aria-hidden /> Cancel
                           </button>
-                        )}
-                      </div>
-                    </div>
-                  </li>
-                );
-              })}
+                        </>
+                      ) : (
+                        <button
+                          type="button"
+                          className="btn btn--danger-quiet btn--sm"
+                          onClick={() => setConfirm({ action: "delete", booking: b })}
+                        >
+                          <Trash2 size={15} aria-hidden /> Delete
+                        </button>
+                      )
+                    }
+                  />
+                </li>
+              ))}
             </ul>
           )}
 
@@ -232,7 +214,7 @@ export default function MyBookings() {
         message={
           confirm &&
           (confirm.action === "cancel"
-            ? `${confirm.booking.space?.name}, ${relativeDay(confirm.booking.date)} ${confirm.booking.startTime}–${confirm.booking.endTime}. The slot opens up for others straight away.`
+            ? `${confirm.booking.space?.name}, ${relativeDay(confirm.booking.date)} ${confirm.booking.startTime}–${confirm.booking.endTime}. The seats open up for others straight away.`
             : `This removes the booking from your history for good.`)
         }
         confirmLabel={confirm?.action === "cancel" ? "Cancel booking" : "Delete booking"}

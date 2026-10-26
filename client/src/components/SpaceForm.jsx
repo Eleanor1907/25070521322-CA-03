@@ -63,7 +63,7 @@ export default function SpaceForm({ initial, onSubmit, onCancel, serverErrors = 
   return (
     <form className="form" onSubmit={handleSubmit} noValidate>
       <Field id="space-name" label="Name" error={allErrors.name}>
-        <input value={values.name} onChange={set("name")} maxLength={60} placeholder="e.g. Banyan" autoFocus />
+        <input value={values.name} onChange={set("name")} maxLength={60} placeholder="e.g. The Sable Room" data-autofocus />
       </Field>
 
       <div className="form-row">
@@ -113,14 +113,18 @@ export default function SpaceForm({ initial, onSubmit, onCancel, serverErrors = 
 
       <label className="switch">
         <input type="checkbox" checked={values.isActive} onChange={set("isActive")} />
-        <span>Open for booking</span>
+        <span>
+          Open for booking
+          <small>Closed spaces stay in the list but members can't book them.</small>
+        </span>
       </label>
 
       <div className="form-actions">
-        <button type="button" className="btn btn--ghost" onClick={onCancel} disabled={busy}>
+        <button type="button" className="btn btn--secondary" onClick={onCancel} disabled={busy}>
           Cancel
         </button>
         <button type="submit" className="btn btn--primary" disabled={busy}>
+          {busy && <span className="btn__spinner" aria-hidden="true" />}
           {busy ? "Saving…" : initial?._id ? "Save changes" : "Add space"}
         </button>
       </div>

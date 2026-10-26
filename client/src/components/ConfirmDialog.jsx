@@ -1,6 +1,8 @@
 // components/ConfirmDialog.jsx
 // "Are you sure?" dialog used before cancelling or deleting something.
+// The safe button gets the focus, so pressing Enter by accident keeps things.
 
+import { AlertTriangle } from "lucide-react";
 import Modal from "./Modal";
 
 export default function ConfirmDialog({
@@ -15,10 +17,16 @@ export default function ConfirmDialog({
   onClose,
 }) {
   return (
-    <Modal open={open} title={title} onClose={busy ? () => {} : onClose} width={440}>
-      <p className="confirm__message">{message}</p>
+    <Modal
+      open={open}
+      title={title}
+      description={message}
+      icon={danger ? <AlertTriangle size={20} /> : null}
+      onClose={busy ? () => {} : onClose}
+      width={460}
+    >
       <div className="form-actions">
-        <button type="button" className="btn btn--ghost" onClick={onClose} disabled={busy}>
+        <button type="button" className="btn btn--secondary" onClick={onClose} disabled={busy} data-autofocus>
           {cancelLabel}
         </button>
         <button
@@ -27,6 +35,7 @@ export default function ConfirmDialog({
           onClick={onConfirm}
           disabled={busy}
         >
+          {busy && <span className="btn__spinner" aria-hidden="true" />}
           {busy ? "Working…" : confirmLabel}
         </button>
       </div>

@@ -1,6 +1,6 @@
 // diagnose.js
-// Collects everything needed to find out why FLEXI isn't starting and writes it
-// to FLEXI/diagnostics.txt. Run it with CHECK-FLEXI.bat (or: node diagnose.js).
+// Collects everything needed to find out why Pine isn't starting and writes it
+// to the project folder as diagnostics.txt. Run it with CHECK-FLEXI.bat (or: node diagnose.js).
 // It never prints passwords or the JWT secret.
 
 const fs = require("fs");
@@ -48,7 +48,7 @@ async function fetchText(url) {
 }
 
 (async () => {
-  log(`FLEXI diagnostics  ${new Date().toString()}`);
+  log(`Pine diagnostics  ${new Date().toString()}`);
 
   section("Environment");
   log("node:", process.version, "| platform:", process.platform, process.arch);

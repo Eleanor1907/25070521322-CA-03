@@ -1,26 +1,28 @@
-# FLEXI: flexible workspace booking
+# Pine: a place for you
 
 CA-03 full-stack project, PRN 25070521322.
 
-FLEXI lets people book a **hot desk, a meeting room or a private cabin by the half hour**.
-Members see each space's day as a strip from 08:00 to 20:00, pick a free gap, and manage their bookings.
+> The app was renamed from **FLEXI** to **Pine** (tagline: *a place for you*). Behind the scenes some names stay as they were so existing data keeps working: the database is still called `flexi`, the demo logins are still `@flexi.com`, and the launchers are still `START-FLEXI.bat` and `CHECK-FLEXI.bat`.
+
+Pine lets people book a **hot desk, a meeting room or a private cabin by the half hour**.
+Members see each space's day like a cinema seat map, where every half hour from 08:00 to 20:00 is a seat. They pick a run of free seats, and each booking becomes a ticket they can reschedule or cancel.
 Admins add and edit spaces and see every booking in the building.
 
 It is a full-stack **MERN** project: **React** (frontend) → **Express/Node.js** REST API (backend) → **MongoDB** (database, through Mongoose).
 Every screen reads and writes real MongoDB data. Nothing is hard-coded or stored only in the browser.
 
-![FLEXI home page with the live "Today at FLEXI" board](docs/screenshots/01-home.png)
+![Pine home page with the live "Today at Pine" board](docs/screenshots/01-home.png)
 
 ## Quick start (Windows)
 
-> FLEXI is a web app, not a file you open. Double-clicking `index.html` or the zip won't run it. It needs **Node.js** and **MongoDB** installed, and then two small servers running.
+> Pine is a web app, not a file you open. Double-clicking `index.html` or the zip won't run it. It needs **Node.js** and **MongoDB** installed, and then two small servers running.
 
 1. Install **Node.js LTS** (https://nodejs.org) and **MongoDB Community Server** (https://www.mongodb.com/try/download/community, Windows x64 `.msi`, choose *Complete*, keep **Install MongoD as a Service** and **Install MongoDB Compass** ticked).
-2. Unzip FLEXI (right-click → **Extract All…**). Don't run it from inside the zip.
+2. Unzip Pine (right-click → **Extract All…**). Don't run it from inside the zip.
 3. Double-click **`START-FLEXI.bat`**. The first time, it installs the packages, checks MongoDB, adds demo data, starts the API and the React app in two windows, and opens http://localhost:5173.
 4. Log in with `riya@flexi.com` / `Member@123` (member) or `admin@flexi.com` / `Admin@123` (admin).
 
-To stop FLEXI, close the two windows. To start it again, double-click `START-FLEXI.bat`. The manual way, with every command explained, is in [section 4](#4-setup-on-windows-step-by-step).
+To stop Pine, close the two windows. To start it again, double-click `START-FLEXI.bat`. The manual way, with every command explained, is in [section 4](#4-setup-on-windows-step-by-step).
 
 ---
 
@@ -46,13 +48,13 @@ To stop FLEXI, close the two windows. To start it again, double-click `START-FLE
 ## 1. Features
 
 **Everyone**
-- Home page with a live **"Today at FLEXI" board**: every space and when it's booked today, read from MongoDB.
+- Home page with a live **"Today at Pine" board**: every space and when it's booked today, read from MongoDB.
 - **Register** and **log in** (passwords hashed with bcrypt, sessions use a JWT).
 
 **Members**
 - **Find a space**: pick a day, search by name or floor, filter by type and number of people, sort by name, price or seats, and page through the results. Filters stay in the URL, so a refresh keeps them.
-- **Book**: a large day strip shows what's taken; click a free half hour to start there. The form checks clashes, opening hours (08:00–20:00), past times, capacity and purpose before sending, and shows the cost.
-- **My bookings**: Upcoming / Past / Cancelled / All tabs, search, sort and pagination.
+- **Book**: a seat map shows the day as three rows of half-hour seats (morning, afternoon, evening). Click a start seat and then an end seat, or drag across seats; arrow keys and the From/To boxes work too. Taken seats can't be picked. The form checks clashes, opening hours (08:00–20:00), past times, capacity and purpose before sending, and shows the cost.
+- **My bookings**: every booking is a ticket. Upcoming / Past / Cancelled / All tabs, search, sort and pagination.
   - **Reschedule** (edit) an upcoming booking.
   - **Cancel** it, which frees the slot for others.
   - **Delete** past or cancelled bookings.
@@ -64,8 +66,10 @@ To stop FLEXI, close the two windows. To start it again, double-click `START-FLE
 - **The building today**: occupancy, today's board, and this month's bookings by space type (a MongoDB aggregation).
 
 **Quality details**
-- Loading, empty and error states on every page, plus toast notifications.
-- Responsive layout from phone to desktop, keyboard focus styles and screen-reader labels.
+- One visual system, written down in [`DESIGN.md`](DESIGN.md): a dark editorial look (black page, grey frames, wide uppercase headings, neon-green accent and pill buttons) taken from a reference video, seat colours that always mean the same thing (free, taken, yours, your choice, passed), and booking tickets.
+- Loading skeletons, empty and error states (with Try again) on every page, toast notifications, and confirm dialogs before every cancel or delete.
+- Responsive layout from phone to desktop (on phones the booking total and Confirm button stay pinned to the bottom of the screen).
+- Accessible: full keyboard use (including the seat map), visible focus, screen-reader labels, colour contrast checked to WCAG AA, and reduced motion respected.
 - Clear messages when the API or MongoDB is down; the API keeps running and recovers when MongoDB comes back.
 
 | Find a space | Book | My bookings |
@@ -82,7 +86,7 @@ To stop FLEXI, close the two windows. To start it again, double-click `START-FLE
 
 The lab video (CA-03) asked for:
 
-| Requirement from the video | Where it is in FLEXI |
+| Requirement from the video | Where it is in Pine |
 |---|---|
 | A folder named with your **PRN**, containing `client` and `server` | Rename `FLEXI/` to your PRN (see [section 12](#12-push-to-github-as-shown-in-class)). Inside are `client/` and `server/`. |
 | `client` = React application | `client/`: React 19 + Vite + React Router + Axios |
@@ -101,15 +105,16 @@ FLEXI/                          <- rename to your PRN before submitting
 ├── client/                     React frontend (Vite)
 │   ├── public/favicon.svg
 │   ├── src/
-│   │   ├── components/         Reusable UI: AppShell, DayStrip, Field, Modal, ConfirmDialog,
-│   │   │                       SpaceForm, PasswordInput, Pagination, RouteGuards, ZoneTag, ...
+│   │   ├── components/         Reusable UI: AppShell, Seats (SeatRow, SeatMap), Ticket, DatePicker,
+│   │   │                       Field, Modal, ConfirmDialog, SpaceForm, Pagination, RouteGuards, ...
 │   │   ├── context/AuthContext.jsx   Who is logged in (shared with every page)
 │   │   ├── hooks/              useToast (notifications), useDebounce (search box)
 │   │   ├── pages/              Landing, Login, Register, Overview, Spaces, BookSpace,
 │   │   │                       MyBookings, AdminSpaces, AdminBookings, NotFound
 │   │   ├── services/           api.js (Axios setup) + authService, spaceService, bookingService
-│   │   ├── styles/             tokens.css, base.css, layout.css, components.css, pages.css
-│   │   ├── utils/format.js     Date, time and money helpers
+│   │   ├── styles/             tokens.css (colours, type, spacing), base.css, layout.css,
+│   │   │                       components.css, seats.css (seats and tickets), pages.css
+│   │   ├── utils/              format.js (date, time, money), seats.js (seat states), typeIcons.js
 │   │   ├── App.jsx             All routes
 │   │   └── main.jsx            Starts React
 │   ├── .env.example
@@ -156,7 +161,7 @@ FLEXI/                          <- rename to your PRN before submitting
 ### 4.2 Open the project
 
 1. Unzip the project, for example to `C:\Users\<you>\Desktop\FLEXI`.
-2. In VS Code: **File → Open Folder…** and choose the `FLEXI` folder.
+2. In VS Code: **File → Open Folder…** and choose the `Pine` folder.
 3. Open a terminal: **Terminal → New Terminal** (PowerShell).
 
 ### 4.3 Install dependencies
@@ -169,7 +174,7 @@ npm install
 cd ..
 ```
 
-(Or run the shortcut `npm run install:all` from the `FLEXI` folder.)
+(Or run the shortcut `npm run install:all` from the `Pine` folder.)
 
 ### 4.4 Create the `.env` files
 
@@ -198,7 +203,7 @@ This creates 8 spaces, some bookings and two accounts:
 | Admin | `admin@flexi.com` | `Admin@123` |
 | Member | `riya@flexi.com` | `Member@123` |
 
-Running it again never duplicates anything. `npm run seed -- --reset` **deletes** all FLEXI users, spaces and bookings and starts fresh.
+Running it again never duplicates anything. `npm run seed -- --reset` **deletes** all Pine users, spaces and bookings and starts fresh.
 
 ### 4.7 Start the app (two terminals)
 
@@ -213,7 +218,7 @@ You should see:
 
 ```
 MongoDB connected: 127.0.0.1/flexi
-FLEXI API running at http://localhost:5000/api
+Pine API running at http://localhost:5000/api
 ```
 
 **Terminal 2: frontend** (click **+** in the VS Code terminal panel to open another one)
@@ -248,7 +253,7 @@ Register a new account, or log in with a demo account. Keep both terminals open 
 
 **Prove the full-stack flow during your demo:**
 
-1. In the app, book a space (e.g. *Neem*, tomorrow, 14:00–15:00).
+1. In the app, book a space (e.g. *The Sable Room*, tomorrow, 14:00–15:00).
 2. In Compass, open `bookings` and click **Refresh**. The new document is there, with your user's `_id` and the space's `_id`.
 3. In the app, reschedule it to 16:00, then refresh Compass: `startTime` changed.
 4. Cancel it: `status` becomes `"cancelled"`. Delete it: the document is gone.
@@ -403,14 +408,14 @@ Example: **a member clicks "Confirm booking"**
                                           - overlap with other bookings      ──▶ bookings.find
                                        7. Booking.create()  (schema validation) ─▶ insertOne
                                   ◀──── 8. 201 { success, message, data }
-  9. toast "Booked Neem on …"
+  9. toast "Booked The Sable Room on …"
  10. navigate to My bookings
      → GET /api/bookings ───────────▶ listBookings → bookings.find + populate ─▶
                                   ◀──── JSON list
  11. page shows the saved booking. Refreshing repeats step 10, so data always comes from MongoDB.
 ```
 
-If something fails (e.g. a clash), the API answers `409` with a message. `parseApiError()` turns it into the red notice, and the strip reloads to show the slot that was just taken.
+If something fails (e.g. a clash), the API answers `409` with a message. `parseApiError()` turns it into the red notice, and the seat map reloads to show the seats that were just taken.
 
 **Login flow**: `/auth/login` checks the bcrypt hash and returns a **JWT**. The React app keeps the token in `localStorage` (only the token, never app data) and an Axios *interceptor* adds it to every request. If the server answers `401`, the interceptor logs you out and sends you to the login page.
 
@@ -434,13 +439,14 @@ They cover: registration validation and duplicates, login, JWT protection, admin
 | Check | Result |
 |---|---|
 | `npm run test:api` (26 API tests against real MongoDB 7.0) | ✅ 26/26 passed |
-| Browser end-to-end test (Playwright, 21 steps): register → filter/search → book via the strip → refresh → reschedule → clash caught on submit → cancel → delete → admin add/edit/delete space → admin search → logout and session expiry. Each step was checked directly in MongoDB | ✅ 21/21 passed |
+| Browser end-to-end test (Playwright, 25 steps): live home board → register → filter/search → book by clicking seats → refresh → reschedule → clash caught on submit → drag and keyboard seat picking → a drag stopping at a taken seat → cancel → delete → admin add/edit/delete space → admin search → phone menu with no sideways scrolling → logout and session expiry. Each step was checked directly in MongoDB | ✅ 25/25 passed |
+| Accessibility scan (axe-core, WCAG 2.1 A and AA rules) on 10 screens at desktop and phone width | ✅ 0 violations |
 | Data survives restarting both the API and MongoDB | ✅ |
 | MongoDB stopped while the API runs: requests get a clear `503`; the API reconnects when MongoDB is back | ✅ |
 | API started without MongoDB: exits with a clear message | ✅ |
-| API stopped while the UI is open: the page shows "Can't reach the FLEXI server…" | ✅ |
-| Production build (`npm run build` in client) and linter | ✅ no errors |
-| Layout at 1440 px desktop and 390 px phone, no console errors | ✅ |
+| API stopped while the UI is open: the page shows "Can't reach the Pine server…" | ✅ |
+| Production build (`npm run build` in client) and linter (`npm run lint`) | ✅ no errors (8 style warnings about loading data inside effects) |
+| Layout at 1440 px desktop, 820 px tablet and 390 px phone, no console errors | ✅ |
 
 **Not tested here** (my environment was Linux without a GUI or internet access to Atlas): running on Windows itself, the Compass GUI (I checked the same collections with the MongoDB driver instead), and a MongoDB Atlas connection. The steps in sections 4–6 are the standard ones. If anything differs on your laptop, check [Troubleshooting](#13-troubleshooting).
 
@@ -449,7 +455,7 @@ They cover: registration validation and duplicates, login, JWT protection, admin
 - [ ] Register a new user → document appears in `users` (password is a hash)
 - [ ] Wrong password → "Email or password is incorrect."
 - [ ] Book a space → document in `bookings`; refresh the page → still there
-- [ ] Try an overlapping time → the strip turns red and booking is blocked
+- [ ] Pick From/To times that overlap someone else's booking → the chosen seats turn red and booking is blocked
 - [ ] Reschedule → `startTime`/`endTime` change in Compass
 - [ ] Cancel → `status: "cancelled"`; Delete → document removed
 - [ ] Log in as admin → add a space, edit its rate, delete it (check Compass each time)
@@ -459,7 +465,7 @@ They cover: registration validation and duplicates, login, JWT protection, admin
 
 ## 12. Push to GitHub (as shown in class)
 
-1. **Rename the folder** to your PRN, e.g. `FLEXI` → `25070521XXX`. The code doesn't depend on the folder name.
+1. **Rename the folder** to your PRN, e.g. `Pine` → `25070521XXX`. The code doesn't depend on the folder name.
 2. On GitHub: **New repository** → name **`<PRN>-CA-03`** (e.g. `25070521XXX-CA-03`) → **Public** → no README, .gitignore or license → **Create repository**.
 3. In VS Code's terminal, inside your PRN folder:
 
@@ -493,7 +499,7 @@ Notes:
 | `connect ECONNREFUSED ::1:27017` | Use `127.0.0.1` instead of `localhost` in `MONGODB_URI` (Node prefers IPv6 for "localhost"). |
 | `JWT_SECRET is missing` / `MONGODB_URI is missing` | You haven't created `server/.env`. Do step 4.4. |
 | `Port 5000 is already in use` | Close the other server, or set `PORT=5001` in `server/.env`, then start the client with `set FLEXI_API_TARGET=http://127.0.0.1:5001` before `npm run dev` (Command Prompt), and restart both. |
-| Page shows "Can't reach the FLEXI server" | The **FLEXI server (API)** window was closed or crashed. Run `START-FLEXI.bat` again (or `npm run dev` in `server`) and keep that window open. What it printed is saved in `server/flexi-server.log`, and `CHECK-FLEXI.bat` writes a full report to `diagnostics.txt`. |
+| Page shows "Can't reach the Pine server" | The **Pine server (API)** window was closed or crashed. Run `START-FLEXI.bat` again (or `npm run dev` in `server`) and keep that window open. What it printed is saved in `server/flexi-server.log`, and `CHECK-FLEXI.bat` writes a full report to `diagnostics.txt`. |
 | Browser console shows `ERR_BLOCKED_BY_CLIENT` or a **CORS** error | Make sure you have the latest `client/vite.config.js` and `client/src/services/api.js`. The app should call `/api` on port 5173 (same address), never `localhost:5000` directly. Browsers like Brave and ad-blockers block pages that call a different `localhost` port. |
 | Demo login doesn't work | Run `npm run seed` in `server` (with the backend's MongoDB running). |
 | "Please log in to continue" all the time | Your token expired or `JWT_SECRET` changed. Log in again. |
@@ -501,7 +507,8 @@ Notes:
 | Atlas: timeout / `Could not connect to any servers` | Add your IP (or `0.0.0.0/0`) under **Network Access**. College Wi-Fi may block port 27017, so try a phone hotspot. |
 | Changed a `.env` value but nothing happened | Restart that `npm run dev`. Vite reads `.env` only at start. |
 | Compass doesn't show the `flexi` database | It appears after the first write. Run the seed or register a user, then click **Refresh** in Compass. |
-| Times or "today" look wrong | Check your laptop's date, time and time zone. FLEXI uses the computer's local time. |
+| After updating Pine the page says `Failed to resolve import "@fontsource-variable/..."` | The new fonts aren't installed yet. Run `START-FLEXI.bat` again (it installs them), or run `npm install` inside the `client` folder. |
+| Times or "today" look wrong | Check your laptop's date, time and time zone. Pine uses the computer's local time. |
 | `git push` → `HTTP 408` / `RPC failed` | Run the push again (see section 12). |
 
 ---
@@ -514,4 +521,4 @@ See **[docs/VIVA.md](docs/VIVA.md)** for a plain-language architecture walkthrou
 
 ### Tech stack
 
-React 19 · React Router 7 · Axios · Vite · lucide-react icons · Archivo font (bundled, works offline) · Node.js · Express 4 · Mongoose 8 · MongoDB · JSON Web Tokens · bcryptjs · dotenv · cors · morgan · nodemon
+React 19 · React Router 7 · Axios · Vite · lucide-react icons · Archivo font with its width axis (bundled, works offline) · Node.js · Express 4 · Mongoose 8 · MongoDB · JSON Web Tokens · bcryptjs · dotenv · cors · morgan · nodemon

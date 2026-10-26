@@ -1,81 +1,110 @@
 /* styles/tokens.css
-   Design tokens: every colour, size and font used in FLEXI lives here.
-   Theme: building wayfinding. Concrete-grey walls, slate ink, an amber
-   "signal" colour for actions, and one zone colour per type of space. */
+   Pine design tokens. Visual reference: a dark editorial layout (black page,
+   #292929 frames, wide heavy uppercase type, white and outline pills, neon
+   green accent). The seat map keeps its meaning:
+   - Green outlined seats are free, green filled seats are your choice.
+   - Grey seats are taken, white seats are yours, hatched seats have passed.
+   Every colour, size, radius, shadow and timing used in the app lives here. */
 
 :root {
-  /* Surfaces */
-  --paper: #f3f4f1; /* painted concrete */
-  --surface: #ffffff;
-  --sunken: #e8eae5;
-  --line: #d5d8d2;
-  --line-strong: #b4b9b1;
+  color-scheme: dark;
 
-  /* Ink */
-  --ink: #1d2430;
-  --ink-2: #4a5361;
-  --ink-3: #6e7682;
+  /* ---- Page and surfaces ---- */
+  --house: #000000;
+  --surface: #121212;
+  --surface-2: #181818;
+  --sunken: #1f1f1f;
+  --frame: #292929; /* the grey frame around showcase panels */
+  --line: #262626;
+  --line-strong: #666666; /* input and outline-pill borders: 3:1 on the page */
 
-  /* Signal (primary action, current selection) */
-  --signal: #f2b705;
-  --signal-hover: #e0a800;
-  --signal-soft: #fdf3cc;
+  /* ---- Ink (text) ---- */
+  --ink: #ffffff;
+  --ink-2: #bdbdbd;
+  --ink-3: #8c8c8c;
 
-  /* Zones: one colour per space type */
-  --desk: #2e7d5b;
-  --desk-soft: #e1f0e8;
-  --room: #2f5bd3;
-  --room-soft: #e3e9fb;
-  --cabin: #8a4fb5;
-  --cabin-soft: #f0e6f7;
+  /* ---- Top bar ---- */
+  --shell: #000000;
+  --shell-2: #1a1a1a;
+  --shell-3: #292929;
+  --shell-ink: #ffffff;
+  --shell-ink-2: #a6a6a6;
+  --shell-line: rgba(255, 255, 255, 0.16);
 
-  /* Feedback */
-  --danger: #b42318;
-  --danger-soft: #fde8e6;
-  --warn-soft: #fff4d6;
-  --ok: #2e7d5b;
+  /* ---- Seats ---- */
+  --seat-free: #9dff7c; /* outline of a free seat */
+  --seat-free-fill: transparent;
+  --seat-taken: #3a3a3a;
+  --seat-mine: #ffffff;
+  --seat-past: #1c1c1c;
+  --seat-now: #b49cff;
 
-  /* Type: Archivo, a grotesque with a width axis.
-     Headings are set wide (like building signs); body text at normal width. */
-  --font: "Archivo Variable", "Segoe UI", system-ui, -apple-system, sans-serif;
-  --wide: 116%;
-  --step--1: 0.8125rem; /* 13px */
-  --step-0: 1rem; /* 16px */
-  --step-1: 1.25rem; /* 20px */
-  --step-2: 1.5625rem; /* 25px */
-  --step-3: 1.953rem; /* 31px */
-  --step-4: 2.441rem; /* 39px */
-  --step-5: 3.052rem; /* 49px */
+  /* ---- Action (neon green; text on it is black) ---- */
+  --go: #9dff7c;
+  --go-hover: #b8ff9f;
+  --go-press: #85e865;
+  --go-soft: #1c2a17;
+  --go-ink: #9dff7c;
+  --on-go: #000000;
 
-  /* Spacing (4px grid) */
+  /* ---- Feedback ---- */
+  --danger: #ff5c70;
+  --danger-hover: #ff7a8b;
+  --danger-soft: #2b1015;
+  --warn: #ffc56b;
+  --warn-soft: #2a2010;
+
+  /* ---- Type: one family, Archivo, from normal to expanded width ---- */
+  --font-display: "Archivo Variable", "Arial Black", system-ui, sans-serif;
+  --font-text: "Archivo Variable", "Segoe UI", system-ui, sans-serif;
+  --display-stretch: 125%;
+
+  --text-xs: 0.75rem; /* 12 */
+  --text-sm: 0.875rem; /* 14 */
+  --text-md: 1rem; /* 16 */
+  --text-lg: 1.125rem; /* 18 */
+  --title-sm: 1.125rem; /* 18 */
+  --title-md: 1.375rem; /* 22 */
+  --title-lg: 1.875rem; /* 30 */
+  --title-xl: clamp(2.25rem, 5.6vw, 4.75rem);
+
+  /* ---- Spacing (4px grid) ---- */
   --s-1: 4px;
   --s-2: 8px;
   --s-3: 12px;
   --s-4: 16px;
-  --s-5: 24px;
-  --s-6: 32px;
-  --s-7: 48px;
-  --s-8: 64px;
+  --s-5: 20px;
+  --s-6: 24px;
+  --s-7: 32px;
+  --s-8: 40px;
+  --s-9: 56px;
+  --s-10: 80px;
 
-  /* Shape: small radius for controls, larger for panels and dialogs */
-  --r-s: 4px;
-  --r-m: 6px;
-  --r-l: 10px;
+  /* ---- Shape: nearly square panels, fully round pills ---- */
+  --r-xs: 2px;
+  --r-sm: 4px;
+  --r-md: 6px;
+  --r-lg: 8px;
+  --r-xl: 10px;
+  --r-pill: 999px;
 
-  --focus: 0 0 0 3px rgba(242, 183, 5, 0.55), 0 0 0 1px var(--ink);
-  --sidebar-w: 248px;
-}
+  /* ---- Depth (always offset + blur) ---- */
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.6);
+  --shadow-2: 0 2px 4px rgba(0, 0, 0, 0.5), 0 12px 28px -12px rgba(0, 0, 0, 0.8);
+  --shadow-3: 0 14px 34px -12px rgba(0, 0, 0, 0.9), 0 4px 10px rgba(0, 0, 0, 0.5);
+  --shadow-modal: 0 28px 64px -16px rgba(0, 0, 0, 0.95);
 
-/* Each zone class sets --zone so components can colour themselves */
-.zone-hot-desk {
-  --zone: var(--desk);
-  --zone-soft: var(--desk-soft);
-}
-.zone-meeting-room {
-  --zone: var(--room);
-  --zone-soft: var(--room-soft);
-}
-.zone-private-cabin {
-  --zone: var(--cabin);
-  --zone-soft: var(--cabin-soft);
+  /* ---- Motion ---- */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --t-fast: 120ms;
+  --t-base: 180ms;
+  --t-slow: 240ms;
+
+  /* ---- Focus ---- */
+  --focus-ring: 0 0 0 2px var(--house), 0 0 0 4px var(--go);
+
+  /* ---- Layout ---- */
+  --page-max: 1240px;
+  --bar-h: 64px;
 }

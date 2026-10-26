@@ -1,20 +1,21 @@
 // pages/Spaces.jsx
-// Browse spaces for a chosen day. Filters live in the URL (?date=&type=...)
-// so refreshing the page or sharing the link keeps them.
+// Browse spaces for a chosen day. Each space is a row of half-hour seats.
+// Filters live in the URL (?date=&type=...) so refreshing or sharing the link keeps them.
 
 import { useCallback, useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { MapPin, Search, Users } from "lucide-react";
 import PageHeader from "../components/PageHeader";
-import DateStepper from "../components/DateStepper";
-import DayStrip from "../components/DayStrip";
-import ZoneTag from "../components/ZoneTag";
+import DatePicker from "../components/DatePicker";
+import TypeTag from "../components/TypeTag";
 import Pagination from "../components/Pagination";
-import { EmptyState, ErrorState, Loader } from "../components/Feedback";
+import { SeatLegend, SeatRow, SeatRuler } from "../components/Seats";
+import { EmptyState, ErrorState, SkeletonList } from "../components/Feedback";
 import useDebounce from "../hooks/useDebounce";
 import { getSpaces } from "../services/spaceService";
 import { parseApiError } from "../services/api";
-import { SPACE_TYPES, formatMoney, todayString } from "../utils/format";
+import { describeSlots, seatState, seatTimes } from "../utils/seats";
+import { SPACE_TYPES, formatMoney, nowTimeString, relativeDay, todayString } from "../utils/format";
 
 const SORTS = [
   { value: "name", label: "Name" },
@@ -22,6 +23,19 @@ const SORTS = [
   { value: "price-desc", label: "Price, high to low" },
   { value: "capacity-desc", label: "Most seats" },
 ];
+
+const TIMES = seatTimes();
+
+function freeSeats(slots, date) {
+  const clock = { today: todayString(), now: nowTimeString() };
+  return TIMES.filter((t) => seatState(t, slots, date, clock) === "free").length;
+}
+
+function freeText(n) {
+  if (n === 0) return "No free seats left";
+  const hours = n / 2;
+  return `${n} free ${n === 1 ? "seat" : "seats"} (${hours} ${hours === 1 ? "hour" : "hours"})`;
+}
 
 export default function Spaces() {
   const [params, setParams] = useSearchParams();
@@ -77,18 +91,19 @@ export default function Spaces() {
 
   return (
     <>
-      <PageHeader title="Find a space" subtitle="Pick a day, then choose any space with a free gap." />
+      <PageHeader title="Find a space" subtitle="Pick a day. Green seats are free half hours; book any run of them." />
 
-      <div className="toolbar">
-        <DateStepper value={date} onChange={(d) => update({ date: d })} />
+      <div className="filters">
+        <DatePicker id="spaces-date" value={date} onChange={(d) => update({ date: d })} />
 
-        <div className="search">
+        <div className="search filters__grow">
           <Search size={18} aria-hidden />
           <label htmlFor="space-search" className="sr-only">
             Search spaces
           </label>
           <input
             id="space-search"
+            className="input"
             type="search"
             placeholder="Search by name or floor"
             value={search}
@@ -96,6 +111,28 @@ export default function Spaces() {
           />
         </div>
 
+        <label className="select-inline" style={{ "--label-w": "3.6em" }}>
+          <span>People</span>
+          <select className="select" value={minCapacity} onChange={(e) => update({ people: e.target.value })}>
+            <option value="">Any</option>
+            <option value="2">2 or more</option>
+            <option value="4">4 or more</option>
+            <option value="8">8 or more</option>
+          </select>
+        </label>
+        <label className="select-inline" style={{ "--label-w": "2.4em" }}>
+          <span>Sort</span>
+          <select className="select" value={sort} onChange={(e) => update({ sort: e.target.value })}>
+            {SORTS.map((s) => (
+              <option key={s.value} value={s.value}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      <div className="list-head">
         <div className="segmented" role="group" aria-label="Space type">
           <button type="button" className={!type ? "is-on" : ""} aria-pressed={!type} onClick={() => update({ type: "" })}>
             All
@@ -112,87 +149,83 @@ export default function Spaces() {
             </button>
           ))}
         </div>
-
-        <div className="toolbar__selects">
-          <label className="select-inline">
-            <span>People</span>
-            <select value={minCapacity} onChange={(e) => update({ people: e.target.value })}>
-              <option value="">Any</option>
-              <option value="2">2 or more</option>
-              <option value="4">4 or more</option>
-              <option value="8">8 or more</option>
-            </select>
-          </label>
-          <label className="select-inline">
-            <span>Sort</span>
-            <select value={sort} onChange={(e) => update({ sort: e.target.value })}>
-              {SORTS.map((s) => (
-                <option key={s.value} value={s.value}>
-                  {s.label}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
+        <SeatLegend />
       </div>
 
       {error && <ErrorState message={error} onRetry={load} />}
-      {loading && !result && <Loader label="Finding spaces…" />}
+      {loading && !result && !error && <SkeletonList count={3} label="Finding spaces" />}
 
       {result && !error && (
-        <div className={loading ? "is-refreshing" : ""}>
+        <div className={loading ? "is-refreshing" : ""} aria-busy={loading}>
           {result.data.length === 0 ? (
-            <EmptyState
-              title="No spaces match"
-              text="Try another type, fewer people or a different search."
-              action={
-                hasFilters && (
-                  <button
-                    type="button"
-                    className="btn btn--ghost"
-                    onClick={() => {
-                      setSearch("");
-                      update({ type: "", people: "", q: "" });
-                    }}
-                  >
-                    Clear filters
-                  </button>
-                )
-              }
-            />
+            <div className="panel">
+              <EmptyState
+                title="No spaces match"
+                text="Try another type, fewer people or a different search."
+                action={
+                  hasFilters && (
+                    <button
+                      type="button"
+                      className="btn btn--secondary"
+                      onClick={() => {
+                        setSearch("");
+                        update({ type: "", people: "", q: "" });
+                      }}
+                    >
+                      Clear filters
+                    </button>
+                  )
+                }
+              />
+            </div>
           ) : (
-            <ul className="space-list">
-              {result.data.map((s) => (
-                <li key={s._id} className={`space-row zone-${s.type}`}>
-                  <div className="space-row__info">
-                    <h2>{s.name}</h2>
-                    <p className="meta-line">
-                      <ZoneTag type={s.type} />
-                      <span>
-                        <MapPin size={14} aria-hidden /> {s.floor}
-                      </span>
-                      <span>
-                        <Users size={14} aria-hidden /> {s.capacity} {s.capacity === 1 ? "seat" : "seats"}
-                      </span>
-                    </p>
-                    {s.amenities.length > 0 && <p className="space-row__amenities">{s.amenities.join(", ")}</p>}
-                  </div>
+            <ul className="panel space-list" aria-label={`Spaces for ${relativeDay(date)}`}>
+              {result.data.map((s) => {
+                const free = freeSeats(s.bookedSlots, date);
+                const bookUrl = `/app/spaces/${s._id}/book?date=${date}`;
+                return (
+                  <li key={s._id} className="space-row">
+                    <div className="space-row__info">
+                      <h2>
+                        <Link to={bookUrl}>{s.name}</Link>
+                      </h2>
+                      <p className="meta">
+                        <TypeTag type={s.type} />
+                        <span>
+                          <MapPin size={14} aria-hidden /> {s.floor}
+                        </span>
+                        <span>
+                          <Users size={14} aria-hidden /> {s.capacity} {s.capacity === 1 ? "seat" : "seats"}
+                        </span>
+                      </p>
+                      {s.amenities.length > 0 && <p className="space-row__amenities">{s.amenities.join(" · ")}</p>}
+                    </div>
 
-                  <div className="space-row__strip">
-                    <DayStrip slots={s.bookedSlots} date={date} zone={s.type} />
-                  </div>
+                    <div className="space-row__day">
+                      <span className={`space-row__free ${free === 0 ? "is-none" : ""}`}>{freeText(free)}</span>
+                      <SeatRow slots={s.bookedSlots} date={date} label={`${s.name}: ${describeSlots(s.bookedSlots)}`} />
+                      <SeatRuler />
+                    </div>
 
-                  <div className="space-row__book">
-                    <span className="price">
-                      {formatMoney(s.hourlyRate)}
-                      <small> / hour</small>
-                    </span>
-                    <Link className="btn btn--primary btn--sm" to={`/app/spaces/${s._id}/book?date=${date}`}>
-                      Book
-                    </Link>
-                  </div>
-                </li>
-              ))}
+                    <div className="space-row__book">
+                      <span className="price">
+                        {formatMoney(s.hourlyRate)}
+                        <small> / hour</small>
+                      </span>
+                      <span className="space-row__price-inline">{formatMoney(s.hourlyRate)} / hour</span>
+                      {free > 0 ? (
+                        <Link className="btn btn--primary btn--sm" to={bookUrl} aria-label={`Book ${s.name}`}>
+                          Book
+                        </Link>
+                      ) : (
+                        <Link className="btn btn--secondary btn--sm" to={bookUrl} aria-label={`See ${s.name}`}>
+                          See day
+                        </Link>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           )}
 

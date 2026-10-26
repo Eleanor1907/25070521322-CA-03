@@ -7,7 +7,7 @@ import PageHeader from "../components/PageHeader";
 import StatusBadge from "../components/StatusBadge";
 import Pagination from "../components/Pagination";
 import ConfirmDialog from "../components/ConfirmDialog";
-import { EmptyState, ErrorState, Loader } from "../components/Feedback";
+import { EmptyState, ErrorState, SkeletonList } from "../components/Feedback";
 import useDebounce from "../hooks/useDebounce";
 import { useToast } from "../hooks/useToast";
 import { cancelBooking, deleteBooking, getBookings } from "../services/bookingService";
@@ -72,28 +72,30 @@ export default function AdminBookings() {
     <>
       <PageHeader title="All bookings" subtitle="Every member's bookings across the building." />
 
-      <div className="toolbar">
-        <div className="tabs" role="tablist" aria-label="Booking status">
-          {TABS.map((t) => (
-            <button
-              key={t.value}
-              type="button"
-              role="tab"
-              aria-selected={scope === t.value}
-              className={scope === t.value ? "is-on" : ""}
-              onClick={() => changeScope(t.value)}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
-        <div className="search">
+      <div className="tabs" role="tablist" aria-label="Booking status">
+        {TABS.map((t) => (
+          <button
+            key={t.value}
+            type="button"
+            role="tab"
+            aria-selected={scope === t.value}
+            className={scope === t.value ? "is-on" : ""}
+            onClick={() => changeScope(t.value)}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="filters">
+        <div className="search filters__grow">
           <Search size={18} aria-hidden />
           <label htmlFor="admin-booking-search" className="sr-only">
             Search bookings
           </label>
           <input
             id="admin-booking-search"
+            className="input"
             type="search"
             placeholder="Member, email, space or purpose"
             value={search}
@@ -103,9 +105,13 @@ export default function AdminBookings() {
             }}
           />
         </div>
-        <label className="select-inline">
-          <span>Day</span>
+        <div className="date-filter">
+          <label htmlFor="admin-booking-day" className="sr-only">
+            Show one day
+          </label>
           <input
+            id="admin-booking-day"
+            className="input"
             type="date"
             value={date}
             onChange={(e) => {
@@ -122,80 +128,95 @@ export default function AdminBookings() {
                 setPage(1);
               }}
               aria-label="Clear day filter"
+              title="Clear day"
             >
               <X size={16} />
             </button>
           )}
-        </label>
+        </div>
       </div>
 
       {error && <ErrorState message={error} onRetry={load} />}
-      {loading && !result && <Loader label="Loading bookings…" />}
+      {loading && !result && !error && <SkeletonList count={4} label="Loading bookings" />}
 
       {result && !error && (
-        <div className={loading ? "is-refreshing" : ""}>
+        <div className={loading ? "is-refreshing" : ""} aria-busy={loading}>
           {result.data.length === 0 ? (
-            <EmptyState title="No bookings here" text="Change the tab, search or day to see more." />
+            <div className="panel">
+              <EmptyState title="No bookings here" text="Change the tab, search or day to see more." />
+            </div>
           ) : (
-            <div className="table-wrap">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th scope="col">When</th>
-                    <th scope="col">Space</th>
-                    <th scope="col">Member</th>
-                    <th scope="col">Purpose</th>
-                    <th scope="col" className="num">People</th>
-                    <th scope="col" className="num">Cost</th>
-                    <th scope="col">Status</th>
-                    <th scope="col"><span className="sr-only">Actions</span></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {result.data.map((b) => (
-                    <tr key={b._id} className={b.status === "cancelled" ? "is-muted" : ""}>
-                      <td data-label="When">
-                        <strong>{formatDate(b.date)}</strong>
-                        <span className="cell-sub">
-                          {b.startTime}–{b.endTime}
-                        </span>
-                      </td>
-                      <td data-label="Space">
-                        <strong>{b.space?.name || "Deleted space"}</strong>
-                        <span className="cell-sub">{b.space ? typeLabel(b.space.type) : ""}</span>
-                      </td>
-                      <td data-label="Member">
-                        <strong>{b.user?.name || "Deleted user"}</strong>
-                        <span className="cell-sub">{b.user?.email}</span>
-                      </td>
-                      <td data-label="Purpose">{b.purpose}</td>
-                      <td data-label="People" className="num">{b.attendees}</td>
-                      <td data-label="Cost" className="num">{formatMoney(b.totalCost)}</td>
-                      <td data-label="Status">
-                        <StatusBadge booking={b} />
-                      </td>
-                      <td className="row-actions">
-                        {b.isUpcoming && (
+            <div className="panel panel--table">
+              <div className="table-wrap">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th scope="col">When</th>
+                      <th scope="col">Space</th>
+                      <th scope="col">Member</th>
+                      <th scope="col">Purpose</th>
+                      <th scope="col" className="num">
+                        People
+                      </th>
+                      <th scope="col" className="num">
+                        Cost
+                      </th>
+                      <th scope="col">Status</th>
+                      <th scope="col">
+                        <span className="sr-only">Actions</span>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {result.data.map((b) => (
+                      <tr key={b._id} className={b.status === "cancelled" ? "is-muted" : ""}>
+                        <td data-label="When">
+                          <span className="cell-main">{formatDate(b.date)}</span>
+                          <span className="cell-sub tabular">
+                            {b.startTime}–{b.endTime}
+                          </span>
+                        </td>
+                        <td data-label="Space">
+                          <span className="cell-main">{b.space?.name || "Deleted space"}</span>
+                          <span className="cell-sub">{b.space ? typeLabel(b.space.type) : ""}</span>
+                        </td>
+                        <td data-label="Member">
+                          <span className="cell-main">{b.user?.name || "Deleted user"}</span>
+                          <span className="cell-sub">{b.user?.email}</span>
+                        </td>
+                        <td data-label="Purpose">{b.purpose}</td>
+                        <td data-label="People" className="num">
+                          {b.attendees}
+                        </td>
+                        <td data-label="Cost" className="num">
+                          {formatMoney(b.totalCost)}
+                        </td>
+                        <td data-label="Status">
+                          <StatusBadge booking={b} />
+                        </td>
+                        <td className="row-actions">
+                          {b.isUpcoming && (
+                            <button
+                              type="button"
+                              className="btn btn--secondary btn--sm"
+                              onClick={() => setConfirm({ action: "cancel", booking: b })}
+                            >
+                              Cancel
+                            </button>
+                          )}
                           <button
                             type="button"
-                            className="btn btn--ghost btn--sm"
-                            onClick={() => setConfirm({ action: "cancel", booking: b })}
+                            className="btn btn--danger-quiet btn--sm"
+                            onClick={() => setConfirm({ action: "delete", booking: b })}
                           >
-                            Cancel
+                            Delete
                           </button>
-                        )}
-                        <button
-                          type="button"
-                          className="btn btn--quiet-danger btn--sm"
-                          onClick={() => setConfirm({ action: "delete", booking: b })}
-                        >
-                          Delete
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
           <Pagination pagination={result.pagination} noun="bookings" onPage={setPage} />

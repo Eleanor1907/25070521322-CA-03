@@ -83,7 +83,7 @@ const listSpaces = asyncHandler(async (req, res) => {
   });
 });
 
-// GET /api/spaces/board?date=   (public: powers the "today at FLEXI" board on the home page)
+// GET /api/spaces/board?date=   (public: powers the "today at Pine" board on the home page)
 const spaceBoard = asyncHandler(async (req, res) => {
   const date = readDate(req.query.date);
   const spaces = await Space.find({ isActive: true }).sort({ type: 1, name: 1 }).limit(12);

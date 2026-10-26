@@ -1,5 +1,5 @@
 // models/User.js
-// A person who can log in to FLEXI.
+// A person who can log in to Pine.
 // role "member" books spaces; role "admin" also manages spaces and sees every booking.
 
 const mongoose = require("mongoose");

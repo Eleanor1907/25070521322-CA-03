@@ -45,7 +45,7 @@ async function checkBookingRules(input, { userId, excludeId } = {}) {
   if (date < today) errors.date = "This date has already passed.";
   else if (date === today && startTime <= nowTimeString()) errors.startTime = "This time has already passed today.";
   if (startTime < OPEN_TIME || endTime > CLOSE_TIME) {
-    errors.startTime = errors.startTime || `FLEXI is open ${OPEN_TIME}–${CLOSE_TIME}.`;
+    errors.startTime = errors.startTime || `Pine is open ${OPEN_TIME}–${CLOSE_TIME}.`;
   }
   if (endTime <= startTime) errors.endTime = "End time must be after the start time.";
   if (Object.keys(errors).length) throw httpError(400, "Please fix the highlighted fields.", errors);

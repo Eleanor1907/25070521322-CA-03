@@ -1,7 +1,7 @@
 {
   "name": "flexi-server",
   "version": "1.0.0",
-  "description": "FLEXI workspace booking - Express + MongoDB API",
+  "description": "Pine workspace booking - Express + MongoDB API",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

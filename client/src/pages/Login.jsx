@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import Wordmark from "../components/Wordmark";
+import { AlertTriangle, Info } from "lucide-react";
+import AuthLayout from "../components/AuthLayout";
 import Field from "../components/Field";
 import PasswordInput from "../components/PasswordInput";
 import { useAuth } from "../context/AuthContext";
@@ -47,47 +48,53 @@ export default function Login() {
   };
 
   return (
-    <div className="auth">
-      <div className="auth__panel">
-        <Wordmark />
-        <h1>Log in</h1>
-        <p className="auth__sub">Welcome back. Your bookings are where you left them.</p>
+    <AuthLayout
+      headline="Your seats are where you left them."
+      lead="Log in to see today's free seats and your tickets."
+    >
+      <h1>Log in</h1>
+      <p className="auth__sub">Welcome back to Pine.</p>
 
-        {sessionExpired && !formError && (
-          <p className="notice">Your session ended. Log in again to continue.</p>
-        )}
-        {formError && (
-          <p className="notice notice--error" role="alert">
-            {formError}
-          </p>
-        )}
-
-        <form className="form" onSubmit={handleSubmit} noValidate>
-          <Field id="email" label="Email" error={errors.email}>
-            <input type="email" autoComplete="email" value={values.email} onChange={set("email")} autoFocus />
-          </Field>
-          <Field id="password" label="Password" error={errors.password}>
-            <PasswordInput autoComplete="current-password" value={values.password} onChange={set("password")} />
-          </Field>
-          <button type="submit" className="btn btn--primary btn--block" disabled={busy}>
-            {busy ? "Logging in…" : "Log in"}
-          </button>
-        </form>
-
-        <p className="auth__switch">
-          New to FLEXI? <Link to="/register">Create an account</Link>
+      {sessionExpired && !formError && (
+        <p className="notice notice--info">
+          <Info size={18} aria-hidden /> Your session ended. Log in again to continue.
         </p>
+      )}
+      {formError && (
+        <p className="notice notice--error" role="alert">
+          <AlertTriangle size={18} aria-hidden /> {formError}
+        </p>
+      )}
 
-        <details className="demo-accounts">
-          <summary>Demo accounts (after running the seed script)</summary>
-          <dl>
-            <dt>Admin</dt>
-            <dd>admin@flexi.com / Admin@123</dd>
-            <dt>Member</dt>
-            <dd>riya@flexi.com / Member@123</dd>
-          </dl>
-        </details>
-      </div>
-    </div>
+      <form className="form" onSubmit={handleSubmit} noValidate>
+        <Field id="email" label="Email" error={errors.email}>
+          <input type="email" autoComplete="email" value={values.email} onChange={set("email")} autoFocus />
+        </Field>
+        <Field id="password" label="Password" error={errors.password}>
+          <PasswordInput autoComplete="current-password" value={values.password} onChange={set("password")} />
+        </Field>
+        <button type="submit" className="btn btn--primary btn--lg btn--block" disabled={busy}>
+          {busy && <span className="btn__spinner" aria-hidden="true" />}
+          {busy ? "Logging in…" : "Log in"}
+        </button>
+      </form>
+
+      <p className="auth__switch">
+        New to Pine?{" "}
+        <Link className="text-link" to="/register">
+          Create an account
+        </Link>
+      </p>
+
+      <details className="demo-accounts">
+        <summary>Demo accounts (after running the seed script)</summary>
+        <dl>
+          <dt>Admin</dt>
+          <dd>admin@flexi.com / Admin@123</dd>
+          <dt>Member</dt>
+          <dd>riya@flexi.com / Member@123</dd>
+        </dl>
+      </details>
+    </AuthLayout>
   );
 }

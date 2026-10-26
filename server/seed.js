@@ -2,7 +2,7 @@
 // Fills an empty database with demo spaces, an admin, a member and a few bookings.
 //
 //   npm run seed            -> adds anything missing; never deletes your data
-//   npm run seed -- --reset -> DELETES all FLEXI users, spaces and bookings first
+//   npm run seed -- --reset -> DELETES all Pine users, spaces and bookings first
 
 require("dotenv").config();
 const mongoose = require("mongoose");
@@ -18,7 +18,8 @@ const USERS = [
 
 const SPACES = [
   {
-    name: "Window Desk 01",
+    name: "The Aurora Desk",
+    formerly: "Window Desk 01", // demo name before the rename; matched once and renamed in place
     type: "hot-desk",
     capacity: 1,
     floor: "Level 1, open floor",
@@ -27,16 +28,18 @@ const SPACES = [
     description: "Quiet desk by the east windows. Good morning light.",
   },
   {
-    name: "Window Desk 02",
+    name: "The Loggia Desk",
+    formerly: "Window Desk 02", // demo name before the rename; matched once and renamed in place
     type: "hot-desk",
     capacity: 1,
     floor: "Level 1, open floor",
     hourlyRate: 120,
     amenities: ["Wi-Fi", "Power outlets", "Natural light"],
-    description: "Next to Desk 01, facing the courtyard.",
+    description: "Next to the Aurora Desk, facing the courtyard.",
   },
   {
-    name: "Standing Desk 07",
+    name: "The Meridian Desk",
+    formerly: "Standing Desk 07", // demo name before the rename; matched once and renamed in place
     type: "hot-desk",
     capacity: 1,
     floor: "Level 1, open floor",
@@ -45,7 +48,8 @@ const SPACES = [
     description: "Height-adjustable desk near the pantry.",
   },
   {
-    name: "Neem",
+    name: "The Sable Room",
+    formerly: "Neem", // demo name before the rename; matched once and renamed in place
     type: "meeting-room",
     capacity: 4,
     floor: "Level 2",
@@ -54,7 +58,8 @@ const SPACES = [
     description: "Small room for stand-ups and interviews.",
   },
   {
-    name: "Banyan",
+    name: "The Sovereign Room",
+    formerly: "Banyan", // demo name before the rename; matched once and renamed in place
     type: "meeting-room",
     capacity: 8,
     floor: "Level 2",
@@ -63,7 +68,8 @@ const SPACES = [
     description: "Main meeting room with a 65-inch screen and a conference camera.",
   },
   {
-    name: "Peepal Boardroom",
+    name: "The Regent Boardroom",
+    formerly: "Peepal Boardroom", // demo name before the rename; matched once and renamed in place
     type: "meeting-room",
     capacity: 14,
     floor: "Level 3",
@@ -72,7 +78,8 @@ const SPACES = [
     description: "Long table for workshops, reviews and client presentations.",
   },
   {
-    name: "Cabin A",
+    name: "The Ivory Study",
+    formerly: "Cabin A", // demo name before the rename; matched once and renamed in place
     type: "private-cabin",
     capacity: 2,
     floor: "Level 3",
@@ -81,7 +88,8 @@ const SPACES = [
     description: "Closed cabin for calls or focused work.",
   },
   {
-    name: "Cabin B",
+    name: "The Onyx Study",
+    formerly: "Cabin B", // demo name before the rename; matched once and renamed in place
     type: "private-cabin",
     capacity: 3,
     floor: "Level 3",
@@ -90,6 +98,9 @@ const SPACES = [
     description: "Cabin with a small whiteboard wall.",
   },
 ];
+
+// Old demo descriptions that mention an old name; only these are updated on rename
+const OLD_DESCRIPTIONS = { "Window Desk 02": "Next to Desk 01, facing the courtyard." };
 
 function addDays(dateStr, days) {
   const [y, m, d] = dateStr.split("-").map(Number);
@@ -119,10 +130,21 @@ async function run() {
     users[u.email] = user;
   }
 
-  // Spaces: create only the ones that don't exist yet (matched by name)
+  // Spaces: create only the ones that don't exist yet (matched by name).
+  // A demo space still carrying its old name (e.g. "Banyan") is renamed in place,
+  // so its _id and every booking that points to it stay the same.
   const spaces = {};
-  for (const s of SPACES) {
+  for (const { formerly, ...s } of SPACES) {
     let space = await Space.findOne({ name: s.name });
+    if (!space && formerly) {
+      space = await Space.findOne({ name: formerly });
+      if (space) {
+        space.name = s.name;
+        if (space.description === OLD_DESCRIPTIONS[formerly]) space.description = s.description;
+        await space.save();
+        console.log(`Renamed space: ${formerly} -> ${s.name}`);
+      }
+    }
     if (!space) {
       space = await Space.create(s);
       console.log(`Created space: ${s.name}`);
@@ -137,18 +159,18 @@ async function run() {
     const admin = users["admin@flexi.com"];
     const samples = [
       // Today (so the home-page board has something to show)
-      { user: admin, space: "Banyan", date: today, startTime: "09:00", endTime: "11:00", attendees: 6, purpose: "Design sync" },
-      { user: riya, space: "Peepal Boardroom", date: today, startTime: "10:00", endTime: "12:30", attendees: 8, purpose: "Partner workshop" },
-      { user: riya, space: "Window Desk 02", date: today, startTime: "13:00", endTime: "17:00", attendees: 1, purpose: "Report writing" },
-      { user: admin, space: "Cabin B", date: today, startTime: "16:30", endTime: "18:00", attendees: 2, purpose: "Vendor call" },
-      { user: admin, space: "Standing Desk 07", date: today, startTime: "08:00", endTime: "10:30", attendees: 1, purpose: "Inbox zero" },
+      { user: admin, space: "The Sovereign Room", date: today, startTime: "09:00", endTime: "11:00", attendees: 6, purpose: "Design sync" },
+      { user: riya, space: "The Regent Boardroom", date: today, startTime: "10:00", endTime: "12:30", attendees: 8, purpose: "Partner workshop" },
+      { user: riya, space: "The Loggia Desk", date: today, startTime: "13:00", endTime: "17:00", attendees: 1, purpose: "Report writing" },
+      { user: admin, space: "The Onyx Study", date: today, startTime: "16:30", endTime: "18:00", attendees: 2, purpose: "Vendor call" },
+      { user: admin, space: "The Meridian Desk", date: today, startTime: "08:00", endTime: "10:30", attendees: 1, purpose: "Inbox zero" },
       // Upcoming, past and cancelled examples
-      { user: riya, space: "Banyan", date: addDays(today, 1), startTime: "10:00", endTime: "11:30", attendees: 5, purpose: "Sprint planning" },
-      { user: riya, space: "Window Desk 01", date: addDays(today, 2), startTime: "09:00", endTime: "13:00", attendees: 1, purpose: "Focused writing" },
-      { user: riya, space: "Cabin A", date: addDays(today, -3), startTime: "15:00", endTime: "16:00", attendees: 2, purpose: "Client call" },
-      { user: admin, space: "Peepal Boardroom", date: addDays(today, 1), startTime: "14:00", endTime: "17:00", attendees: 10, purpose: "Quarterly review" },
-      { user: admin, space: "Neem", date: addDays(today, 3), startTime: "11:00", endTime: "12:00", attendees: 3, purpose: "Interview panel" },
-      { user: riya, space: "Neem", date: addDays(today, 4), startTime: "16:00", endTime: "17:00", attendees: 2, purpose: "Design review", status: "cancelled" },
+      { user: riya, space: "The Sovereign Room", date: addDays(today, 1), startTime: "10:00", endTime: "11:30", attendees: 5, purpose: "Sprint planning" },
+      { user: riya, space: "The Aurora Desk", date: addDays(today, 2), startTime: "09:00", endTime: "13:00", attendees: 1, purpose: "Focused writing" },
+      { user: riya, space: "The Ivory Study", date: addDays(today, -3), startTime: "15:00", endTime: "16:00", attendees: 2, purpose: "Client call" },
+      { user: admin, space: "The Regent Boardroom", date: addDays(today, 1), startTime: "14:00", endTime: "17:00", attendees: 10, purpose: "Quarterly review" },
+      { user: admin, space: "The Sable Room", date: addDays(today, 3), startTime: "11:00", endTime: "12:00", attendees: 3, purpose: "Interview panel" },
+      { user: riya, space: "The Sable Room", date: addDays(today, 4), startTime: "16:00", endTime: "17:00", attendees: 2, purpose: "Design review", status: "cancelled" },
     ];
 
     for (const b of samples) {

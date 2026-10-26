@@ -1,8 +1,8 @@
-# FLEXI: architecture and viva guide
+# Pine: architecture and viva guide
 
 ## The project in one minute
 
-FLEXI is a **workspace booking system**. A coworking building has hot desks, meeting rooms and private cabins. Members register, log in, find a free time on a chosen day and book it. They can later reschedule, cancel or delete bookings. Admins manage the spaces and see all bookings.
+Pine is a **workspace booking system**. A coworking building has hot desks, meeting rooms and private cabins. Members register, log in, find a free time on a chosen day and book it. They can later reschedule, cancel or delete bookings. Admins manage the spaces and see all bookings.
 
 It is built with the **MERN stack**:
 
@@ -50,7 +50,7 @@ Folders follow **MVC** without the V (React is the view):
 
 ## Inside the frontend
 
-- `pages/`: one component per screen. `components/`: reusable parts (DayStrip, Modal, Field…).
+- `pages/`: one component per screen, loaded only when first opened (`React.lazy`). `components/`: reusable parts (SeatRow, SeatMap, Ticket, Modal, Field…).
 - `services/`: every API call lives here, so pages never build URLs themselves.
 - `context/AuthContext.jsx`: shares the logged-in user with every page through **React Context**.
 - `components/RouteGuards.jsx`: `ProtectedRoute`, `AdminRoute` and `GuestRoute` decide who may open which page.
@@ -62,7 +62,7 @@ Folders follow **MVC** without the V (React is the view):
 
 ### Basics
 
-**1. What is FLEXI and who uses it?**
+**1. What is Pine and who uses it?**
 A booking system for a coworking space. Members book desks, rooms and cabins by the half hour. Admins manage spaces and see all bookings.
 
 **2. Why MERN?**
@@ -74,7 +74,7 @@ One language (JavaScript) end to end. JSON flows naturally from MongoDB document
 **4. What is a REST API? Name the methods you used.**
 REST is an architectural style where URLs name resources (`/api/bookings`) and HTTP methods say what to do: **GET** read, **POST** create, **PUT** replace or update, **PATCH** partially update (we use it for cancel), **DELETE** remove. Responses are JSON with proper status codes.
 
-**5. Which status codes does FLEXI return and when?**
+**5. Which status codes does Pine return and when?**
 200 OK, 201 Created (new user, space or booking), 400 validation error, 401 not logged in or wrong password, 403 not an admin, 404 not found, 409 conflict (duplicate email or name, time clash), 500 unexpected error, 503 database down.
 
 ### React
@@ -158,10 +158,13 @@ The client sends `page` and `limit`. The server uses `.skip((page-1)*limit).limi
 The rule is about *data*. All users, spaces and bookings are stored in MongoDB and fetched from the API. The token only remembers *who* is logged in, so a refresh doesn't log you out. An httpOnly cookie would be safer against XSS, and it's a possible improvement.
 
 **29. What if two people click "Book" for the same slot at the exact same millisecond?**
-Both checks could pass before either save finishes (a race condition). The UI already handles the more common case, where someone books while you're filling the form: the server returns `409` and the strip refreshes. For full protection under heavy load you would use a MongoDB transaction, or store each half-hour slot as a document with a unique index.
+Both checks could pass before either save finishes (a race condition). The UI already handles the more common case, where someone books while you're filling the form: the server returns `409` and the seat map refreshes. For full protection under heavy load you would use a MongoDB transaction, or store each half-hour slot as a document with a unique index.
+
+**29b. How does the seat map work?**
+`utils/seats.js` turns the day into 24 half-hour "seats" and gives each one a state: `taken` or `mine` if a booked slot from the API covers it, `past` if it has already started, otherwise `free`. `SeatMap` draws them as buttons. The first click sets the start seat, the second sets the end seat, and dragging selects a run that stops before the first taken seat. The chosen seats are just `startTime` and `endTime` in the form state, so the From/To boxes and the map always agree. The server still checks every rule when you submit.
 
 **30. What would you add next?**
 Email confirmations, recurring bookings, a weekly calendar view, check-in by QR code, payments, and deployment (e.g. frontend on Vercel or Netlify, API on Render, database on MongoDB Atlas).
 
 **31. How did you test it?**
-26 automated API tests (`npm run test:api`) run against the real server and database and cover every rule. A browser end-to-end test registered a user, booked, refreshed, rescheduled, triggered a clash, cancelled, deleted, and ran the admin add/edit/delete flow, checking MongoDB after each step. I also checked the app's behaviour when MongoDB or the API is down.
+26 automated API tests (`npm run test:api`) run against the real server and database and cover every rule. A browser end-to-end test (25 steps) registered a user, booked by clicking seats, refreshed, rescheduled, triggered a clash, picked seats by dragging and with the keyboard, cancelled, deleted, ran the admin add/edit/delete flow and checked the phone menu, checking MongoDB after each step. An axe-core scan found no WCAG AA violations. I also checked the app's behaviour when MongoDB or the API is down.

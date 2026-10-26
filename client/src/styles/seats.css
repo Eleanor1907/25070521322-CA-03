@@ -1,0 +1,534 @@
+/* styles/seats.css: Pine's own pieces.
+   - Seats: every half hour of a space's day is drawn as a cinema seat.
+     Outlined green = free, filled grey = taken, plum = yours,
+     solid green = your choice, hatched = already passed.
+   - Tickets: each booking is a ticket with a stub and a perforated edge. */
+
+/* =========================================================
+   Seat (shared)
+   ========================================================= */
+.seat {
+  --seat-r: 4px 4px 2px 2px;
+  position: relative;
+  display: block;
+  height: 14px;
+  border: 1.5px solid var(--seat-free);
+  border-radius: var(--seat-r);
+  background: var(--seat-free-fill);
+}
+.seat--taken {
+  border-color: var(--seat-taken);
+  background: var(--seat-taken);
+}
+.seat--mine {
+  border-color: var(--seat-mine);
+  background: var(--seat-mine);
+}
+.seat--past {
+  border-color: var(--seat-past);
+  background: repeating-linear-gradient(135deg, var(--seat-past) 0 3px, #2b2b2b 3px 6px);
+}
+.seat--blank {
+  border-color: var(--line-strong);
+  background: transparent;
+}
+.seat--chosen {
+  border-color: var(--go);
+  background: var(--go);
+}
+.seat--clash {
+  border-color: var(--danger);
+  background: var(--danger);
+}
+/* Amber bar above the seat that holds the current time */
+.seat--now::after {
+  content: "";
+  position: absolute;
+  left: -1.5px;
+  right: -1.5px;
+  top: -6px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--seat-now);
+}
+
+/* =========================================================
+   Seat row: a whole day on one line (lists and boards)
+   Twelve hour groups of two seats each.
+   ========================================================= */
+.seat-row,
+.seat-ruler {
+  display: grid;
+  grid-template-columns: repeat(var(--hours, 12), minmax(0, 1fr));
+  column-gap: 5px;
+}
+.seat-row {
+  padding-top: 6px; /* room for the "now" bar */
+}
+.seat-row__hour {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+}
+.seat-ruler {
+  margin-top: 6px;
+  font-family: var(--font-display);
+  font-size: 11px;
+  line-height: 1;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+.seat-ruler span {
+  padding-left: 1px;
+}
+.seat-row--lg .seat {
+  height: 20px;
+  --seat-r: 6px 6px 3px 3px;
+}
+
+/* =========================================================
+   Seat map: the large, clickable map on the booking page.
+   Three rows (morning, afternoon, evening) of eight seats.
+   ========================================================= */
+.seat-map {
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: pan-y;
+}
+.seat-map__row {
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  align-items: start;
+  gap: var(--s-4);
+}
+.seat-map__label {
+  padding-top: 13px;
+  font-weight: 700;
+  font-size: var(--text-sm);
+  color: var(--ink-2);
+}
+.seat-map__label small {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--text-xs);
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+.seat-map__seats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+.seat-map__hour {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.seat-map__pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+}
+.seat-map__hourlabel {
+  font-family: var(--font-display);
+  font-size: var(--text-xs);
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.seat-btn {
+  --seat-r: 10px 10px 5px 5px;
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 46px;
+  width: 100%;
+  padding: 0;
+  border: 2px solid var(--seat-free);
+  border-radius: var(--seat-r);
+  background: var(--seat-free-fill);
+  --cushion: rgba(157, 255, 124, 0.2);
+  color: var(--go-ink);
+  /* times on the seats use the display face: plain zeros, signage voice */
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition:
+    background-color var(--t-fast) var(--ease-out),
+    border-color var(--t-fast) var(--ease-out),
+    color var(--t-fast) var(--ease-out),
+    transform var(--t-fast) var(--ease-out);
+}
+/* The seat cushion: a rounded pad inside the bottom of the seat */
+.seat-btn::before {
+  content: "";
+  position: absolute;
+  left: 5px;
+  right: 5px;
+  bottom: 4px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--cushion);
+  transition: background-color var(--t-fast) var(--ease-out);
+}
+.seat-btn__time {
+  display: none;
+  margin-top: -4px;
+}
+@media (hover: hover) {
+  .seat-btn.seat--free:not(.seat--chosen, .seat--clash):hover {
+    background: var(--go-soft);
+    --cushion: rgba(157, 255, 124, 0.38);
+  }
+}
+.seat-btn.seat--free:active {
+  transform: scale(0.95);
+}
+.seat-btn.seat--taken {
+  border-color: var(--seat-taken);
+  background: var(--seat-taken);
+  --cushion: #2e2e2e;
+  color: var(--ink-2);
+  cursor: not-allowed;
+}
+.seat-btn.seat--mine {
+  border-color: var(--seat-mine);
+  background: var(--seat-mine);
+  --cushion: #d4d4d4;
+  color: #000;
+  cursor: not-allowed;
+}
+.seat-btn.seat--past {
+  border-color: var(--seat-past);
+  background: repeating-linear-gradient(135deg, var(--seat-past) 0 4px, #2b2b2b 4px 8px);
+  --cushion: transparent;
+  color: var(--ink-3);
+  cursor: not-allowed;
+}
+.seat-btn.seat--chosen {
+  border-color: var(--go);
+  background: var(--go);
+  --cushion: var(--go-press);
+  color: var(--on-go);
+}
+.seat-btn.seat--clash {
+  border-color: var(--danger);
+  background: var(--danger);
+  --cushion: #d63a50;
+  color: #000;
+}
+.seat-btn:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+  z-index: 1;
+}
+.seat-btn.seat--now::after {
+  top: -8px;
+  left: 2px;
+  right: 2px;
+}
+
+.seat-map.is-loading .seat-btn {
+  opacity: 0.55;
+}
+
+/* Wide maps print the time on each seat, so the hour labels underneath go */
+@container (min-width: 600px) {
+  .seat-btn__time {
+    display: block;
+  }
+  .seat-map__hourlabel {
+    display: none;
+  }
+  .seat-map {
+    gap: var(--s-3);
+  }
+}
+@container (max-width: 520px) {
+  .seat-map__row {
+    grid-template-columns: 1fr;
+    gap: var(--s-2);
+  }
+  .seat-map__label {
+    padding-top: 0;
+  }
+  .seat-map__label small {
+    display: inline;
+    margin-left: 6px;
+  }
+  .seat-map__seats {
+    gap: 6px;
+  }
+  .seat-map__pair {
+    gap: 3px;
+  }
+  .seat-btn {
+    height: 42px;
+    --seat-r: 8px 8px 4px 4px;
+  }
+}
+
+/* =========================================================
+   Legend
+   ========================================================= */
+.seat-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2) var(--s-5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--text-sm);
+  color: var(--ink-2);
+}
+.seat-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+.seat-legend .seat {
+  width: 16px;
+  height: 13px;
+}
+.seat-legend .seat--now {
+  height: 3px;
+  border: 0;
+  border-radius: 2px;
+  background: var(--seat-now);
+}
+.seat-legend .seat--now::after {
+  display: none;
+}
+
+/* =========================================================
+   Tickets
+   ========================================================= */
+.ticket-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+/* The wrapper casts the shadow so it follows the notched shape */
+.ticket-wrap {
+  filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.6)) drop-shadow(0 8px 14px rgba(0, 0, 0, 0.5));
+}
+.ticket {
+  --stub: 104px;
+  --notch: 9px;
+  display: grid;
+  grid-template-columns: var(--stub) minmax(0, 1fr) auto;
+  min-height: 132px;
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  -webkit-mask:
+    radial-gradient(circle var(--notch) at var(--stub) 0, transparent 97%, #000) top / 100% 51% no-repeat,
+    radial-gradient(circle var(--notch) at var(--stub) 100%, transparent 97%, #000) bottom / 100% 51% no-repeat;
+  mask:
+    radial-gradient(circle var(--notch) at var(--stub) 0, transparent 97%, #000) top / 100% 51% no-repeat,
+    radial-gradient(circle var(--notch) at var(--stub) 100%, transparent 97%, #000) bottom / 100% 51% no-repeat;
+}
+
+.ticket__stub {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: var(--s-4) var(--s-2);
+  background: var(--frame);
+  color: var(--ink);
+  text-align: center;
+  line-height: 1.1;
+}
+.ticket__stub span {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--shell-ink-2);
+}
+.ticket__stub strong {
+  font-family: var(--font-display);
+  font-stretch: var(--display-stretch);
+  font-size: 2.25rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.ticket__stub em {
+  margin-top: 6px;
+  padding: 2px 8px;
+  border-radius: var(--r-pill);
+  background: var(--go);
+  color: var(--on-go);
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 700;
+}
+/* Perforation between stub and body */
+.ticket__stub::after {
+  content: "";
+  position: absolute;
+  top: calc(var(--notch) + 6px);
+  bottom: calc(var(--notch) + 6px);
+  right: -1px;
+  width: 2px;
+  background: linear-gradient(var(--house) 50%, transparent 0) 0 0 / 2px 8px repeat-y;
+}
+
+.ticket__body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: var(--s-4) var(--s-5) var(--s-4) var(--s-6);
+}
+.ticket__time {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--s-1) var(--s-3);
+  font-family: var(--font-display);
+  font-stretch: var(--display-stretch);
+  font-weight: 700;
+  font-size: var(--title-sm);
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+.ticket__time small {
+  font-family: var(--font-text);
+  font-stretch: 100%;
+  font-weight: 400;
+  font-size: var(--text-sm);
+  color: var(--ink-3);
+  letter-spacing: 0;
+}
+.ticket__space {
+  font-size: var(--text-lg);
+  font-family: var(--font-text);
+  font-stretch: 100%;
+  letter-spacing: 0;
+  font-weight: 700;
+}
+.ticket__purpose {
+  color: var(--ink-2);
+  font-size: var(--text-sm);
+  overflow-wrap: anywhere;
+}
+.ticket__seats {
+  max-width: 420px;
+  margin-top: var(--s-2);
+}
+
+.ticket__side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--s-3);
+  padding: var(--s-4) var(--s-5);
+  border-left: 1px solid var(--line);
+}
+.ticket__side .price {
+  font-size: var(--title-sm);
+}
+.ticket__actions {
+  display: flex;
+  gap: var(--s-2);
+}
+
+/* Past and cancelled tickets */
+.ticket.is-done .ticket__stub,
+.ticket.is-cancelled .ticket__stub {
+  background: var(--sunken);
+  color: var(--ink-2);
+}
+.ticket.is-done .ticket__stub span,
+.ticket.is-cancelled .ticket__stub span {
+  color: var(--ink-3);
+}
+.ticket.is-cancelled .ticket__time,
+.ticket.is-cancelled .ticket__space {
+  color: var(--ink-3);
+}
+.ticket.is-cancelled .ticket__time span {
+  text-decoration: line-through;
+  text-decoration-thickness: 1.5px;
+}
+.ticket.is-cancelled .price {
+  color: var(--ink-3);
+}
+
+/* Larger ticket on the overview */
+.ticket--lg {
+  --stub: 132px;
+  min-height: 176px;
+}
+.ticket--lg .ticket__stub strong {
+  font-size: 3rem;
+}
+.ticket--lg .ticket__time {
+  font-size: var(--title-md);
+}
+.ticket--lg .ticket__space {
+  font-size: var(--title-sm);
+}
+
+@media (max-width: 720px) {
+  .ticket,
+  .ticket--lg {
+    --stub: 76px;
+    grid-template-columns: var(--stub) minmax(0, 1fr);
+  }
+  .ticket__stub strong,
+  .ticket--lg .ticket__stub strong {
+    font-size: 1.875rem;
+  }
+  .ticket__body {
+    padding: var(--s-4) var(--s-4) var(--s-2) var(--s-5);
+  }
+  .ticket__side {
+    grid-column: 2;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    padding: var(--s-2) var(--s-4) var(--s-4) var(--s-5);
+    border-left: 0;
+  }
+  .ticket--lg .ticket__time {
+    font-size: var(--title-sm);
+  }
+}
+
+/* Skeleton ticket while loading */
+.ticket-skeleton {
+  display: grid;
+  grid-template-columns: 104px 1fr;
+  gap: var(--s-5);
+  align-items: center;
+  min-height: 132px;
+  padding-right: var(--s-5);
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-1);
+  overflow: hidden;
+}
+.ticket-skeleton > .skeleton:first-child {
+  height: 100%;
+  border-radius: 0;
+}
+.ticket-skeleton__lines {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}

@@ -1,10 +1,10 @@
 @echo off
 setlocal
-title FLEXI launcher
+title Pine launcher
 cd /d "%~dp0"
 
 echo.
-echo  FLEXI launcher
+echo  Pine launcher
 echo  ==============
 echo.
 
@@ -20,21 +20,22 @@ if not exist "server\.env" node -e "const fs=require('fs');const t=fs.readFileSy
 if not exist "client\.env" copy "client\.env.example" "client\.env" >nul
 if not exist "server\.env" goto :env_failed
 
-rem ---------- 3. Packages (only the first time) ----------
+rem ---------- 3. Packages (the first time, and again when the client's packages change) ----------
 if not exist "server\node_modules" (
   echo Installing server packages. This takes a minute the first time...
   pushd server
   call npm install
   popd
 )
-if not exist "client\node_modules" (
-  echo Installing client packages. This takes a minute the first time...
+rem The client's font package changed (now Archivo), so older copies install once more.
+if not exist "client\node_modules\@fontsource-variable\archivo\wdth.css" (
+  echo Installing client packages. This takes a minute...
   pushd client
   call npm install
   popd
 )
 if not exist "server\node_modules" goto :install_failed
-if not exist "client\node_modules" goto :install_failed
+if not exist "client\node_modules\@fontsource-variable\archivo\wdth.css" goto :install_failed
 
 rem ---------- 4. MongoDB must be running (only checked for a local database) ----------
 findstr /c:"MONGODB_URI=mongodb://127.0.0.1" /c:"MONGODB_URI=mongodb://localhost" "server\.env" >nul
@@ -43,21 +44,23 @@ node -e "const s=require('net').connect(27017,'127.0.0.1');s.on('connect',()=>pr
 if errorlevel 1 goto :no_mongo
 :db_ok
 
-rem ---------- 5. Demo data (only the first time) ----------
-if not exist "server\.seeded" (
-  echo Adding demo spaces, bookings and accounts...
+rem ---------- 5. Demo data (the first time, and once more after an update) ----------
+rem The seed never deletes data. Version 2 renames the old demo spaces in place
+rem (same _id, so every booking keeps pointing to its space).
+if not exist "server\.seeded-v2" (
+  echo Adding or updating the demo spaces, bookings and accounts...
   pushd server
   call npm run seed
-  if not errorlevel 1 echo seeded> .seeded
+  if not errorlevel 1 echo seeded> .seeded-v2
   popd
 )
 
 rem ---------- 6. Start the API and the React app in two windows ----------
 echo.
-echo Starting the FLEXI API and the React app in two new windows.
-echo Keep both windows open while you use FLEXI. Close them to stop it.
-start "FLEXI server (API)" /D "%~dp0server" cmd /k npm run dev
-start "FLEXI client (React)" /D "%~dp0client" cmd /k npm run dev
+echo Starting the Pine API and the React app in two new windows.
+echo Keep both windows open while you use Pine. Close them to stop it.
+start "Pine server (API)" /D "%~dp0server" cmd /k npm run dev
+start "Pine client (React)" /D "%~dp0client" cmd /k npm run dev
 
 echo Opening http://localhost:5173 in your browser...
 timeout /t 8 /nobreak >nul
@@ -77,7 +80,7 @@ exit /b 1
 
 :old_node
 for /f %%v in ('node -v') do set NODEVER=%%v
-echo Your Node.js is %NODEVER%. FLEXI needs Node.js 20.19 or newer, or 22.12 or newer.
+echo Your Node.js is %NODEVER%. Pine needs Node.js 20.19 or newer, or 22.12 or newer.
 echo Install the current LTS version from https://nodejs.org , then run this again.
 echo.
 pause
@@ -99,7 +102,7 @@ exit /b 1
 
 :no_mongo
 echo.
-echo MongoDB is not running on this computer, so FLEXI has nowhere to save data.
+echo MongoDB is not running on this computer, so Pine has nowhere to save data.
 echo.
 echo   1. Download MongoDB Community Server: https://www.mongodb.com/try/download/community
 echo      Version: current, Platform: Windows x64, Package: msi

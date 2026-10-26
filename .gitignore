@@ -17,10 +17,13 @@ Thumbs.db
 .vscode/
 
 # Marker written by START-FLEXI.bat after the demo data is added
-server/.seeded
+server/.seeded*
 
 # Output of CHECK-FLEXI.bat
 diagnostics.txt
 
 # Personal upload helper (not part of the project)
 PUSH-TO-GITHUB.bat
+
+# Design tool working files
+.impeccable/

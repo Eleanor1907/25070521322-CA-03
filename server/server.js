@@ -1,5 +1,5 @@
 // server.js
-// Entry point of the FLEXI backend.
+// Entry point of the Pine backend.
 // Start it with:  npm run dev   (auto-restarts on save)   or   npm start
 
 // ---------- Startup log ----------
@@ -9,7 +9,7 @@ const fs = require("fs");
 const path = require("path");
 const LOG_FILE = path.join(__dirname, "flexi-server.log");
 try {
-  fs.writeFileSync(LOG_FILE, `--- FLEXI server starting ${new Date().toString()} (node ${process.version}) ---\n`);
+  fs.writeFileSync(LOG_FILE, `--- Pine server starting ${new Date().toString()} (node ${process.version}) ---\n`);
 } catch {
   /* logging is optional */
 }
@@ -26,7 +26,7 @@ for (const method of ["log", "warn", "error"]) {
   };
 }
 process.on("uncaughtException", (err) => {
-  console.error("FLEXI server crashed:", err);
+  console.error("Pine server crashed:", err);
   process.exit(1);
 });
 
@@ -78,7 +78,7 @@ app.use(errorHandler);
 // ---------- Start ----------
 connectDB().then(() => {
   const server = app.listen(PORT, () => {
-    console.log(`FLEXI API running at http://localhost:${PORT}/api`);
+    console.log(`Pine API running at http://localhost:${PORT}/api`);
   });
 
   server.on("error", (err) => {
@@ -86,7 +86,7 @@ connectDB().then(() => {
       console.error(`Port ${PORT} is already in use. Close the other server or change PORT in server/.env.`);
     } else if (err.code === "EACCES") {
       console.error(
-        `Windows won't let FLEXI use port ${PORT} (it is reserved on this computer).\n` +
+        `Windows won't let Pine use port ${PORT} (it is reserved on this computer).\n` +
           `Set PORT=5050 in server/.env and VITE_API_URL=http://localhost:5050/api in client/.env, then start both again.`
       );
     } else {

@@ -31,7 +31,7 @@ const protect = asyncHandler(async (req, res, next) => {
 
 function adminOnly(req, res, next) {
   if (req.user?.role !== "admin") {
-    return next(httpError(403, "Only FLEXI admins can do this."));
+    return next(httpError(403, "Only Pine admins can do this."));
   }
   next();
 }

@@ -1,7 +1,7 @@
 // utils/time.js
 // Small helpers for working with "YYYY-MM-DD" dates and "HH:MM" times.
 
-const OPEN_TIME = "08:00"; // FLEXI opens at 8 am
+const OPEN_TIME = "08:00"; // Pine opens at 8 am
 const CLOSE_TIME = "20:00"; // and closes at 8 pm
 
 const pad = (n) => String(n).padStart(2, "0");

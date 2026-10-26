@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import Wordmark from "../components/Wordmark";
+import { AlertTriangle } from "lucide-react";
+import AuthLayout from "../components/AuthLayout";
 import Field from "../components/Field";
 import PasswordInput from "../components/PasswordInput";
 import { useAuth } from "../context/AuthContext";
@@ -57,40 +58,44 @@ export default function Register() {
   };
 
   return (
-    <div className="auth">
-      <div className="auth__panel">
-        <Wordmark />
-        <h1>Create your account</h1>
-        <p className="auth__sub">It takes a minute. Then you can book any free space.</p>
+    <AuthLayout
+      headline="Book your first seat in a minute."
+      lead="Create an account, then book any free desk, room or cabin by the half hour."
+    >
+      <h1>Create your account</h1>
+      <p className="auth__sub">It takes a minute. Then you can book any free seat.</p>
 
-        {formError && (
-          <p className="notice notice--error" role="alert">
-            {formError}
-          </p>
-        )}
-
-        <form className="form" onSubmit={handleSubmit} noValidate>
-          <Field id="name" label="Full name" error={errors.name}>
-            <input autoComplete="name" value={values.name} onChange={set("name")} maxLength={60} autoFocus />
-          </Field>
-          <Field id="email" label="Email" error={errors.email}>
-            <input type="email" autoComplete="email" value={values.email} onChange={set("email")} />
-          </Field>
-          <Field id="password" label="Password" error={errors.password} hint="At least 6 characters.">
-            <PasswordInput autoComplete="new-password" value={values.password} onChange={set("password")} />
-          </Field>
-          <Field id="confirm" label="Confirm password" error={errors.confirm}>
-            <PasswordInput autoComplete="new-password" value={values.confirm} onChange={set("confirm")} />
-          </Field>
-          <button type="submit" className="btn btn--primary btn--block" disabled={busy}>
-            {busy ? "Creating account…" : "Create account"}
-          </button>
-        </form>
-
-        <p className="auth__switch">
-          Already have an account? <Link to="/login">Log in</Link>
+      {formError && (
+        <p className="notice notice--error" role="alert">
+          <AlertTriangle size={18} aria-hidden /> {formError}
         </p>
-      </div>
-    </div>
+      )}
+
+      <form className="form" onSubmit={handleSubmit} noValidate>
+        <Field id="name" label="Full name" error={errors.name}>
+          <input autoComplete="name" value={values.name} onChange={set("name")} maxLength={60} autoFocus />
+        </Field>
+        <Field id="email" label="Email" error={errors.email}>
+          <input type="email" autoComplete="email" value={values.email} onChange={set("email")} />
+        </Field>
+        <Field id="password" label="Password" error={errors.password} hint="At least 6 characters.">
+          <PasswordInput autoComplete="new-password" value={values.password} onChange={set("password")} />
+        </Field>
+        <Field id="confirm" label="Confirm password" error={errors.confirm}>
+          <PasswordInput autoComplete="new-password" value={values.confirm} onChange={set("confirm")} />
+        </Field>
+        <button type="submit" className="btn btn--primary btn--lg btn--block" disabled={busy}>
+          {busy && <span className="btn__spinner" aria-hidden="true" />}
+          {busy ? "Creating account…" : "Create account"}
+        </button>
+      </form>
+
+      <p className="auth__switch">
+        Already have an account?{" "}
+        <Link className="text-link" to="/login">
+          Log in
+        </Link>
+      </p>
+    </AuthLayout>
   );
 }

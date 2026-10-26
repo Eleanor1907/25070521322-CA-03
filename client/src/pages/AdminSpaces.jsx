@@ -4,12 +4,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { Pencil, Plus, Search, Trash2 } from "lucide-react";
 import PageHeader from "../components/PageHeader";
-import ZoneTag from "../components/ZoneTag";
+import TypeTag from "../components/TypeTag";
 import Modal from "../components/Modal";
 import SpaceForm from "../components/SpaceForm";
 import ConfirmDialog from "../components/ConfirmDialog";
 import Pagination from "../components/Pagination";
-import { EmptyState, ErrorState, Loader } from "../components/Feedback";
+import { EmptyState, ErrorState, SkeletonList } from "../components/Feedback";
 import useDebounce from "../hooks/useDebounce";
 import { useToast } from "../hooks/useToast";
 import { createSpace, deleteSpace, getSpaces, updateSpace } from "../services/spaceService";
@@ -83,6 +83,8 @@ export default function AdminSpaces() {
     }
   };
 
+  const filtered = Boolean(debounced || type);
+
   return (
     <>
       <PageHeader
@@ -95,14 +97,15 @@ export default function AdminSpaces() {
         }
       />
 
-      <div className="toolbar">
-        <div className="search">
+      <div className="filters">
+        <div className="search filters__grow">
           <Search size={18} aria-hidden />
           <label htmlFor="admin-space-search" className="sr-only">
             Search spaces
           </label>
           <input
             id="admin-space-search"
+            className="input"
             type="search"
             placeholder="Search by name, floor or description"
             value={search}
@@ -112,9 +115,10 @@ export default function AdminSpaces() {
             }}
           />
         </div>
-        <label className="select-inline">
+        <label className="select-inline" style={{ "--label-w": "2.6em" }}>
           <span>Type</span>
           <select
+            className="select"
             value={type}
             onChange={(e) => {
               setType(e.target.value);
@@ -129,9 +133,10 @@ export default function AdminSpaces() {
             ))}
           </select>
         </label>
-        <label className="select-inline">
+        <label className="select-inline" style={{ "--label-w": "2.4em" }}>
           <span>Sort</span>
           <select
+            className="select"
             value={sort}
             onChange={(e) => {
               setSort(e.target.value);
@@ -147,78 +152,106 @@ export default function AdminSpaces() {
       </div>
 
       {error && <ErrorState message={error} onRetry={load} />}
-      {loading && !result && <Loader label="Loading spaces…" />}
+      {loading && !result && !error && <SkeletonList count={4} label="Loading spaces" />}
 
       {result && !error && (
-        <div className={loading ? "is-refreshing" : ""}>
+        <div className={loading ? "is-refreshing" : ""} aria-busy={loading}>
           {result.data.length === 0 ? (
-            <EmptyState
-              title={debounced || type ? "No spaces match" : "No spaces yet"}
-              text={debounced || type ? "Try a different search or type." : "Add the first desk, room or cabin."}
-              action={
-                !(debounced || type) && (
-                  <button type="button" className="btn btn--primary" onClick={() => openForm(null)}>
-                    Add space
-                  </button>
-                )
-              }
-            />
+            <div className="panel">
+              <EmptyState
+                title={filtered ? "No spaces match" : "No spaces yet"}
+                text={filtered ? "Try a different search or type." : "Add the first desk, room or cabin."}
+                action={
+                  !filtered && (
+                    <button type="button" className="btn btn--primary" onClick={() => openForm(null)}>
+                      <Plus size={18} aria-hidden /> Add space
+                    </button>
+                  )
+                }
+              />
+            </div>
           ) : (
-            <div className="table-wrap">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th scope="col">Space</th>
-                    <th scope="col">Type</th>
-                    <th scope="col" className="num">Seats</th>
-                    <th scope="col" className="num">Rate / hour</th>
-                    <th scope="col">Status</th>
-                    <th scope="col">Updated</th>
-                    <th scope="col"><span className="sr-only">Actions</span></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {result.data.map((s) => (
-                    <tr key={s._id} className={s.isActive ? "" : "is-muted"}>
-                      <td data-label="Space">
-                        <strong>{s.name}</strong>
-                        <span className="cell-sub">{s.floor}</span>
-                      </td>
-                      <td data-label="Type">
-                        <ZoneTag type={s.type} />
-                      </td>
-                      <td data-label="Seats" className="num">{s.capacity}</td>
-                      <td data-label="Rate / hour" className="num">{formatMoney(s.hourlyRate)}</td>
-                      <td data-label="Status">
-                        <span className={`badge ${s.isActive ? "badge--confirmed" : "badge--cancelled"}`}>
-                          {s.isActive ? "Open" : "Closed"}
-                        </span>
-                      </td>
-                      <td data-label="Updated">{formatDate(s.updatedAt.slice(0, 10), { day: "numeric", month: "short" })}</td>
-                      <td className="row-actions">
-                        <button type="button" className="icon-btn" onClick={() => openForm(s)} aria-label={`Edit ${s.name}`}>
-                          <Pencil size={17} />
-                        </button>
-                        <button
-                          type="button"
-                          className="icon-btn icon-btn--danger"
-                          onClick={() => setToDelete(s)}
-                          aria-label={`Delete ${s.name}`}
-                        >
-                          <Trash2 size={17} />
-                        </button>
-                      </td>
+            <div className="panel panel--table">
+              <div className="table-wrap">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th scope="col">Space</th>
+                      <th scope="col">Type</th>
+                      <th scope="col" className="num">
+                        Seats
+                      </th>
+                      <th scope="col" className="num">
+                        Rate / hour
+                      </th>
+                      <th scope="col">Status</th>
+                      <th scope="col">Updated</th>
+                      <th scope="col">
+                        <span className="sr-only">Actions</span>
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {result.data.map((s) => (
+                      <tr key={s._id} className={s.isActive ? "" : "is-muted"}>
+                        <td data-label="Space">
+                          <span className="cell-main">{s.name}</span>
+                          <span className="cell-sub">{s.floor}</span>
+                        </td>
+                        <td data-label="Type">
+                          <TypeTag type={s.type} />
+                        </td>
+                        <td data-label="Seats" className="num">
+                          {s.capacity}
+                        </td>
+                        <td data-label="Rate / hour" className="num">
+                          {formatMoney(s.hourlyRate)}
+                        </td>
+                        <td data-label="Status">
+                          <span className={`badge ${s.isActive ? "badge--open" : "badge--closed"}`}>
+                            {s.isActive ? "Open" : "Closed"}
+                          </span>
+                        </td>
+                        <td data-label="Updated">
+                          {formatDate(s.updatedAt.slice(0, 10), { day: "numeric", month: "short" })}
+                        </td>
+                        <td className="row-actions">
+                          <button
+                            type="button"
+                            className="icon-btn"
+                            onClick={() => openForm(s)}
+                            aria-label={`Edit ${s.name}`}
+                            title="Edit"
+                          >
+                            <Pencil size={17} />
+                          </button>
+                          <button
+                            type="button"
+                            className="icon-btn icon-btn--danger"
+                            onClick={() => setToDelete(s)}
+                            aria-label={`Delete ${s.name}`}
+                            title="Delete"
+                          >
+                            <Trash2 size={17} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
           <Pagination pagination={result.pagination} noun="spaces" onPage={setPage} />
         </div>
       )}
 
-      <Modal open={Boolean(editing)} title={editing?._id ? `Edit ${editing.name}` : "Add a space"} onClose={() => !saving && setEditing(null)}>
+      <Modal
+        open={Boolean(editing)}
+        title={editing?._id ? `Edit ${editing.name}` : "Add a space"}
+        description={editing?._id ? "Changes apply to new bookings straight away." : "It can be booked as soon as it's open."}
+        onClose={() => !saving && setEditing(null)}
+      >
         {editing && (
           <SpaceForm
             key={editing._id || "new"}
