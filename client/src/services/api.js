@@ -1,15 +1,17 @@
 // services/api.js
 // One shared Axios instance for every request to the Express backend.
 //
-// During development (npm run dev) the app calls "/api" on its own address and
-// Vite forwards it to the backend (see vite.config.js). For a production build,
-// VITE_API_URL in client/.env can point to wherever the API is hosted.
+// The app always calls "/api" on its own address. During development Vite
+// forwards it to the backend (see vite.config.js); online, the Express server
+// serves both the website and /api, so no address is needed. Only if the API
+// ever lives on a different site, set VITE_API_BASE (e.g. https://api.example.com/api)
+// before building. (An old VITE_API_URL=http://localhost... line is ignored on purpose.)
 
 import axios from "axios";
 
 export const TOKEN_KEY = "flexi_token";
 
-const baseURL = import.meta.env.DEV ? "/api" : import.meta.env.VITE_API_URL || "/api";
+const baseURL = import.meta.env.DEV ? "/api" : import.meta.env.VITE_API_BASE || "/api";
 
 const api = axios.create({
   baseURL,

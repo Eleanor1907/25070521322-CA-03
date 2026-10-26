@@ -30,7 +30,7 @@ process.on("uncaughtException", (err) => {
   process.exit(1);
 });
 
-require("dotenv").config(); // loads server/.env into process.env
+require("dotenv").config({ path: path.join(__dirname, ".env") }); // loads server/.env, whichever folder you start from
 
 const express = require("express");
 const cors = require("cors");
@@ -73,6 +73,18 @@ app.use("/api/bookings", requireDB, require("./routes/bookingRoutes"));
 
 // ---------- Errors ----------
 app.use("/api", notFound);
+
+// ---------- The website itself (production) ----------
+// After `npm run build`, client/dist holds the finished React app. When it exists,
+// this server hands it out too, so the whole site runs from one address online.
+// (While developing, Vite serves the pages on port 5173 instead.)
+const CLIENT_DIST = path.join(__dirname, "..", "client", "dist");
+if (fs.existsSync(path.join(CLIENT_DIST, "index.html"))) {
+  app.use(express.static(CLIENT_DIST, { index: false, maxAge: "1h" }));
+  // Any other address (e.g. /app/bookings) is a React page: send index.html
+  app.get("*", (req, res) => res.sendFile(path.join(CLIENT_DIST, "index.html")));
+}
+
 app.use(errorHandler);
 
 // ---------- Start ----------
@@ -87,7 +99,7 @@ connectDB().then(() => {
     } else if (err.code === "EACCES") {
       console.error(
         `Windows won't let Pine use port ${PORT} (it is reserved on this computer).\n` +
-          `Set PORT=5050 in server/.env and VITE_API_URL=http://localhost:5050/api in client/.env, then start both again.`
+          `Set PORT=5050 in server/.env, and before starting the client run: set FLEXI_API_TARGET=http://127.0.0.1:5050`
       );
     } else {
       console.error(err);

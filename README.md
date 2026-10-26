@@ -41,7 +41,7 @@ To stop Pine, close the two windows. To start it again, double-click `START-FLEX
 11. [Testing](#11-testing)
 12. [Push to GitHub (as shown in class)](#12-push-to-github-as-shown-in-class)
 13. [Troubleshooting](#13-troubleshooting)
-14. [Viva preparation](#14-viva-preparation)
+14. [Put Pine online (Render + MongoDB Atlas)](#14-put-pine-online-render--mongodb-atlas)
 
 ---
 
@@ -295,7 +295,7 @@ MONGODB_URI=mongodb+srv://myuser:mypassword@cluster0.abcde.mongodb.net/flexi?ret
 
 | Variable | Example | Purpose |
 |---|---|---|
-| `VITE_API_URL` | `http://localhost:5000/api` | Only for a production build. In development the app calls `/api` on its own address and Vite forwards it to the backend (the `proxy` in `client/vite.config.js`), so there is nothing to configure. |
+| `VITE_API_BASE` | *(leave unset)* | Optional. The app always calls `/api` on its own address: in development Vite forwards it to the backend (the `proxy` in `client/vite.config.js`), and online the Express server serves the website and the API together. Set it only if the API is hosted on a different site. |
 
 > Only variables starting with `VITE_` reach the browser, so the database string and JWT secret stay on the server. After editing a `.env` file, restart that terminal's `npm run dev`.
 
@@ -513,9 +513,29 @@ Notes:
 
 ---
 
-## 14. Viva preparation
+## 14. Put Pine online (Render + MongoDB Atlas)
 
-See **[docs/VIVA.md](docs/VIVA.md)** for a plain-language architecture walkthrough and likely viva questions with answers.
+Online, one Render web service runs everything: Express serves the built React website **and** the `/api` routes from the same address, and the data lives in a free MongoDB Atlas cluster. The settings are in [`render.yaml`](render.yaml); the commands are `npm run build` and `npm start` in the project root.
+
+**A. Database (MongoDB Atlas, free M0)**
+
+1. Do steps 1–4 of [section 6](#6-using-mongodb-atlas-instead-optional). In **Network Access** choose *Allow access from anywhere* (`0.0.0.0/0`), because Render's address changes.
+2. Keep the connection string, with `/flexi` added before the `?`.
+3. You don't need to load the demo data yourself: every time Render starts Pine it adds any missing demo spaces and accounts (it never deletes anything).
+
+**B. Website and API (Render, free web service)**
+
+1. Push the latest code to GitHub (section 12).
+2. Sign in at https://render.com with GitHub → **New** → **Blueprint** → pick this repository. Render reads `render.yaml`.
+3. When it asks for **`MONGODB_URI`**, paste the Atlas connection string. `JWT_SECRET` is generated for you.
+4. Click **Apply** and wait for the first build (a few minutes). Your site is at `https://pine-XXXX.onrender.com` (the exact name is shown in Render).
+5. Check `https://…onrender.com/api/health` shows `"database":"connected"`, then log in with the demo accounts.
+
+**Good to know**
+
+- The free Render service sleeps after 15 minutes without visitors; the first visit after that takes about a minute. Open the link a minute before a demo.
+- Every push to GitHub redeploys the site automatically.
+- Never put the Atlas password in a file that goes to GitHub; it only lives in Render's settings and your local `server/.env`.
 
 ---
 

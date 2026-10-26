@@ -2,12 +2,17 @@
   "name": "flexi",
   "version": "1.0.0",
   "private": true,
-  "description": "FLEXI - flexible workspace booking (React + Node.js + Express + MongoDB)",
+  "description": "Pine - a place for you. Workspace booking (React + Node.js + Express + MongoDB)",
   "scripts": {
     "install:all": "npm install --prefix server && npm install --prefix client",
     "seed": "npm run seed --prefix server",
     "server": "npm run dev --prefix server",
     "client": "npm run dev --prefix client",
-    "test:api": "npm run test:api --prefix server"
+    "test:api": "npm run test:api --prefix server",
+    "build": "npm install --prefix server --omit=dev && npm install --prefix client --include=dev && npm run build --prefix client",
+    "start": "node server/server.js"
+  },
+  "engines": {
+    "node": ">=20.19"
   }
 }

@@ -1,0 +1,19 @@
+# render.yaml: tells Render how to run Pine (one web service: API + website).
+# In Render: New > Blueprint > pick this GitHub repo. It asks for MONGODB_URI.
+services:
+  - type: web
+    name: pine
+    runtime: node
+    plan: free
+    buildCommand: npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: MONGODB_URI
+        sync: false # paste your MongoDB Atlas connection string when Render asks
+      - key: JWT_SECRET
+        generateValue: true # Render makes a long random secret
+      - key: JWT_EXPIRES_IN
+        value: 7d
